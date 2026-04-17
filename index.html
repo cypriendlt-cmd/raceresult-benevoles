@@ -626,6 +626,68 @@ function extraireEventId(url) {
   return match ? match[1] : null;
 }
 
+/** Deduit context et section depuis une URL ACN Timing */
+function deduitACNParams(urlStr) {
+  // Format: https://www.acn-timing.com/?lng=NL#/events/ID/ctx/CONTEXT/generic/XXX/home/SECTION
+  const match = urlStr.match(/ctx\/([^\/]+)\/.*home\/([^\/\?]+)/);
+  if (match) {
+    return { context: match[1], section: match[2] };
+  }
+  return null;
+}
+
+/** Fetch resultats depuis ACN Timing API */
+async function recupererResultatsDepuisACN(context, section) {
+  try {
+    const apiUrl = 'https://results.chronorace.be/api/results/table/search/' + context + '/' + section + '?srch=&pageSize=1000';
+    const proxiedApiUrl = proxiedUrl(apiUrl);
+
+    const response = await fetch(proxiedApiUrl);
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status + ' depuis ACN Timing');
+    }
+
+    const data = await response.json();
+    return parseACNData(data);
+  } catch (error) {
+    throw new Error('Erreur ACN: ' + error.message);
+  }
+}
+
+/** Parse les donnees JSON d'ACN Timing */
+function parseACNData(data) {
+  try {
+    if (!data.Rows || !Array.isArray(data.Rows)) {
+      throw new Error('Format inattendu: pas de "Rows"');
+    }
+
+    const rows = [['Rang', 'Nom', 'Prenom', 'Temps', 'Temps Net', 'Categorie', 'Dossard']];
+
+    for (let i = 0; i < data.Rows.length; i++) {
+      const row = data.Rows[i];
+      if (!Array.isArray(row)) continue;
+
+      const rang = row[0] ? String(row[0]).trim() : String(i + 1);
+      const nomComplet = row[2] ? String(row[2]).trim() : '';
+
+      // Parser nom/prenom
+      const parts = nomComplet.split(/\s+/);
+      const nom = parts[0] || '';
+      const prenom = parts.length > 1 ? parts.slice(1).join(' ') : '';
+
+      const temps = row[4] ? String(row[4]).trim() : '';
+      const categorie = row[3] ? String(row[3]).trim() : '';
+      const dossard = row[1] ? String(row[1]).trim() : '';
+
+      if (nom) rows.push([rang, nom, prenom, temps, temps, categorie, dossard]);
+    }
+
+    return rows;
+  } catch (error) {
+    throw new Error('Parse ACN: ' + error.message);
+  }
+}
+
 /** Affiche une alerte */
 function afficherAlerte(elementId, message, suggestion) {
   const el = document.getElementById(elementId);
@@ -884,14 +946,42 @@ async function chargerResultats() {
     return;
   }
 
+  afficherSpinner('spinner-resultats', true);
+  document.getElementById('dropzone').classList.remove('visible');
+
+  // Tenter ACN Timing d'abord
+  if (url.includes('acn-timing.com')) {
+    try {
+      const acnParams = deduitACNParams(url);
+      if (!acnParams) {
+        throw new Error('Impossible d\'extraire context/section de l\'URL ACN');
+      }
+      const rows = await recupererResultatsDepuisACN(acnParams.context, acnParams.section);
+      resultatsCharges = parseCSVResultats(rows);
+
+      afficherSpinner('spinner-resultats', false);
+      if (resultatsCharges.length === 0) {
+        afficherAlerte('alert-url', 'Aucun resultat trouve dans ACN Timing.');
+        return;
+      }
+      document.getElementById('resultats-info').textContent = resultatsCharges.length + ' resultat(s) charge(s) depuis ACN Timing.';
+      croiserEtAfficher();
+      return;
+    } catch (error) {
+      afficherSpinner('spinner-resultats', false);
+      afficherAlerte('alert-url', 'Erreur ACN Timing: ' + error.message, 'Essayez avec un fichier CSV/PDF.');
+      document.getElementById('dropzone').classList.add('visible');
+      return;
+    }
+  }
+
+  // Sinon, tenter RaceResult
   const eventId = extraireEventId(url);
   if (!eventId) {
+    afficherSpinner('spinner-resultats', false);
     afficherAlerte('alert-url', 'Impossible d\'extraire l\'ID de l\'evenement.', 'L\'URL doit contenir un nombre, par exemple : https://my.raceresult.com/388451/');
     return;
   }
-
-  afficherSpinner('spinner-resultats', true);
-  document.getElementById('dropzone').classList.remove('visible');
 
   // Endpoint 1 : list
   const url1 = 'https://my.raceresult.com/' + eventId + '/RRPublish/data/list?contest=0&listformat=json';
@@ -927,7 +1017,7 @@ async function chargerResultats() {
   if (!data) {
     // Afficher la zone d'upload
     document.getElementById('dropzone').classList.add('visible');
-    afficherAlerte('alert-url', 'Impossible de recuperer les resultats depuis RaceResult.', 'Vous pouvez deposer un fichier CSV/XLSX ci-dessous.');
+    afficherAlerte('alert-url', 'Impossible de recuperer les resultats depuis RaceResult.', 'Vous pouvez deposer un fichier CSV/XLSX/PDF ci-dessous.');
     return;
   }
 
