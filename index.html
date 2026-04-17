@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RaceResult Benevoles</title>
+<style>
+/* ===== Reset et base ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --accent: #178CBA;
+  --accent-hover: #126e94;
+  --bg: #F8FAFC;
+  --text: #1E293B;
+  --muted: #475569;
+  --border: #E2E8F0;
+  --row-hover: #F1F5F9;
+  --success: #16A34A;
+  --error: #DC2626;
+  --error-bg: #FEF2F2;
+  --error-border: #FECACA;
+  --radius: 8px;
+  --transition: 200ms ease;
+  --font-ui: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-data: 'Fira Code', 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ===== Typographie ===== */
+h1 { font-size: 1.5rem; font-weight: 700; }
+h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--text); }
+h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+p { color: var(--muted); }
+
+/* ===== Layout ===== */
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* ===== Header ===== */
+.app-header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 0;
+  margin-bottom: 1.5rem;
+}
+.app-header .container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.header-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.header-text h1 {
+  line-height: 1.2;
+}
+.header-text p {
+  font-size: 0.85rem;
+  margin-top: 0.1rem;
+}
+
+/* ===== Sections / Cartes ===== */
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ===== Formulaires ===== */
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+  color: var(--text);
+}
+
+input[type="text"],
+input[type="url"] {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--text);
+  background: #fff;
+  transition: border-color var(--transition);
+  outline: none;
+}
+input[type="text"]:focus,
+input[type="url"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(23,140,186,0.12);
+}
+
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+.input-row input {
+  flex: 1;
+}
+
+/* ===== Boutons ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), opacity var(--transition);
+  white-space: nowrap;
+  min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-success {
+  background: var(--success);
+  color: #fff;
+}
+.btn-success:hover { background: #15803d; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.btn-outline:hover { background: rgba(23,140,186,0.06); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--error);
+  border: 1px solid var(--error);
+  padding: 0.3rem 0.6rem;
+  min-height: 36px;
+  font-size: 0.8rem;
+}
+.btn-danger:hover { background: var(--error-bg); }
+
+.btn-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  min-height: 36px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+/* ===== Alerte d'erreur ===== */
+.alert {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  display: none;
+}
+.alert-error {
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error);
+}
+.alert-success {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  color: var(--success);
+}
+.alert.visible { display: block; }
+
+/* ===== Spinner ===== */
+.spinner-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(248,250,252,0.7);
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+}
+.spinner-overlay.visible { display: flex; }
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.relative { position: relative; }
+
+/* ===== Tableaux ===== */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+thead {
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-data);
+  font-size: 0.82rem;
+}
+tbody tr {
+  transition: background var(--transition);
+}
+tbody tr:hover {
+  background: var(--row-hover);
+}
+
+/* ===== Zone d'upload ===== */
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  display: none;
+}
+.dropzone.visible { display: block; }
+.dropzone.dragover {
+  border-color: var(--accent);
+  background: rgba(23,140,186,0.04);
+}
+.dropzone p { margin-top: 0.5rem; font-size: 0.85rem; }
+
+/* ===== Accordion / Parametres ===== */
+.accordion-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  min-height: 44px;
+}
+.accordion-toggle svg {
+  transition: transform var(--transition);
+}
+.accordion-toggle.open svg.chevron {
+  transform: rotate(180deg);
+}
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 300ms ease, padding 300ms ease;
+}
+.accordion-body.open {
+  max-height: 600px;
+  padding-top: 1rem;
+}
+
+/* ===== Formulaire ajout benevole ===== */
+.add-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.add-form input {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ===== Badge compteur ===== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  margin-left: 0.5rem;
+}
+
+/* ===== Feedback copie ===== */
+.copy-feedback {
+  opacity: 0;
+  transition: opacity var(--transition);
+  font-size: 0.8rem;
+  color: var(--success);
+  font-weight: 500;
+}
+.copy-feedback.visible {
+  opacity: 1;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  .input-row { flex-direction: column; }
+  .add-form { flex-direction: column; }
+  .add-form input { min-width: 100%; }
+  .btn-group { flex-direction: column; }
+  .btn-group .btn { width: 100%; }
+  h1 { font-size: 1.25rem; }
+  .container { padding: 0.75rem; }
+}
+@media (min-width: 1024px) {
+  .container { padding: 1.5rem; }
+}
+
+/* ===== Utilitaire ===== */
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 0.75rem; }
+.mt-3 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 0.75rem; }
+.text-muted { color: var(--muted); font-size: 0.83rem; }
+.text-sm { font-size: 0.82rem; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ===== EN-TETE ===== -->
+<header class="app-header">
+  <div class="container">
+    <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="5" r="3"/>
+      <path d="M12 8v4"/>
+      <path d="M9 12l-2 8 5-3 5 3-2-8"/>
+      <path d="M7 20l-1 2"/>
+      <path d="M17 20l1 2"/>
+    </svg>
+    <div class="header-text">
+      <h1>RaceResult Benevoles</h1>
+      <p>Suivi des resultats de course pour les benevoles</p>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ===== SECTION URL ===== -->
+  <section class="card" id="section-url">
+    <h2>URL de l'evenement RaceResult</h2>
+    <div class="input-row">
+      <input type="url" id="input-url" placeholder="https://my.raceresult.com/388451/">
+      <button class="btn btn-primary" id="btn-charger" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.22-8.56"/><path d="M21 3v6h-6"/></svg>
+        Charger les resultats
+      </button>
+    </div>
+    <div class="alert alert-error mt-2" id="alert-url"></div>
+  </section>
+
+  <!-- ===== ZONE UPLOAD (AFFICHEE SI ENDPOINTS ECHOUENT) ===== -->
+  <section class="card dropzone" id="dropzone">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p>Les endpoints RaceResult n'ont pas repondu.<br>Deposez un fichier CSV ou XLSX ici, ou cliquez pour selectionner.</p>
+    <input type="file" id="file-input" accept=".csv,.xlsx" class="hidden">
+  </section>
+
+  <!-- ===== RESULTATS ===== -->
+  <section class="card relative" id="section-resultats">
+    <div class="spinner-overlay" id="spinner-resultats">
+      <div class="spinner"></div>
+    </div>
+    <h2>Resultats croises <span class="badge hidden" id="badge-count">0</span></h2>
+    <p class="text-muted mb-2" id="resultats-info">Chargez un evenement et synchronisez les benevoles pour voir les resultats.</p>
+
+    <div class="table-wrap">
+      <table id="table-resultats" class="hidden">
+        <thead>
+          <tr>
+            <th>Rang</th>
+            <th>Nom</th>
+            <th>Prenom</th>
+            <th>Temps officiel</th>
+            <th>Temps net</th>
+            <th>Categorie</th>
+            <th>Dossard</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-resultats"></tbody>
+      </table>
+    </div>
+
+    <div class="btn-group" id="export-buttons" style="display:none">
+      <button class="btn btn-outline btn-sm" id="btn-csv" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Export CSV
+      </button>
+      <button class="btn btn-outline btn-sm" id="btn-copier" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copier le tableau
+      </button>
+      <span class="copy-feedback" id="copy-feedback">Copie !</span>
+    </div>
+  </section>
+
+  <!-- ===== BASE BENEVOLES ===== -->
+  <section class="card" id="section-benevoles">
+    <h2>Base de benevoles</h2>
+
+    <!-- Sync Google Sheets -->
+    <label for="input-sheet">Google Sheet ID</label>
+    <div class="input-row">
+      <input type="text" id="input-sheet" placeholder="1aBcDeFgHiJkLmNoPqRsTuVwXyZ...">
+      <button class="btn btn-primary" id="btn-sync" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-9 9m0 0a9 9 0 01-9-9m9 9V3m0 0a9 9 0 019 9m-9-9a9 9 0 00-9 9"/></svg>
+        Synchroniser
+      </button>
+    </div>
+    <div class="alert alert-error mt-1" id="alert-sheet"></div>
+    <div class="alert alert-success mt-1" id="alert-sheet-ok"></div>
+
+    <!-- Tableau des benevoles -->
+    <div class="table-wrap mt-3 relative">
+      <div class="spinner-overlay" id="spinner-benevoles">
+        <div class="spinner"></div>
+      </div>
+      <table id="table-benevoles">
+        <thead>
+          <tr>
+            <th>Prenom</th>
+            <th>Nom</th>
+            <th>Role</th>
+            <th style="width:60px"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-benevoles"></tbody>
+      </table>
+    </div>
+
+    <!-- Ajout manuel -->
+    <div class="add-form mt-2">
+      <input type="text" id="add-prenom" placeholder="Prenom">
+      <input type="text" id="add-nom" placeholder="Nom">
+      <input type="text" id="add-role" placeholder="Role">
+      <button class="btn btn-success btn-sm" id="btn-add-benevole" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Ajouter
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== PARAMETRES ===== -->
+  <section class="card">
+    <button class="accordion-toggle" id="toggle-settings" type="button">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001.08 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.6.77 1.02 1.51 1.08H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1.08z"/></svg>
+      <span>Parametres</span>
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="accordion-body" id="settings-body">
+      <label for="input-proxy">URL du proxy CORS</label>
+      <input type="text" id="input-proxy" class="mb-2">
+      <label for="input-sheet-settings">Google Sheet ID</label>
+      <input type="text" id="input-sheet-settings" class="mb-2">
+      <button class="btn btn-primary btn-sm" id="btn-save-settings" type="button">Sauvegarder</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ============================================================
+// Configuration
+// ============================================================
+const CONFIG = {
+  PROXY_URL_DEFAULT: 'https://raceresult-proxy.cymusic29.workers.dev',
+  LS_KEY_BENEVOLES: 'benevoles',
+  LS_KEY_PROXY: 'proxy_url',
+  LS_KEY_SHEET: 'sheet_id',
+};
+
+/** Recupere l'URL du proxy depuis localStorage ou la valeur par defaut */
+function getProxyUrl() {
+  return localStorage.getItem(CONFIG.LS_KEY_PROXY) || CONFIG.PROXY_URL_DEFAULT;
+}
+
+/** Construit l'URL proxifiee */
+function proxiedUrl(targetUrl) {
+  return getProxyUrl() + '/proxy?url=' + encodeURIComponent(targetUrl);
+}
+
+// ============================================================
+// Utilitaires
+// ============================================================
+
+/** Normalise un texte pour comparaison (sans accents, minuscule, espaces compacts) */
+function normaliser(str) {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+/** Extrait l'ID d'evenement depuis une URL RaceResult */
+function extraireEventId(url) {
+  const match = url.match(/raceresult\.com\/(\d+)/i);
+  return match ? match[1] : null;
+}
+
+/** Affiche une alerte */
+function afficherAlerte(elementId, message, suggestion) {
+  const el = document.getElementById(elementId);
+  el.innerHTML = message + (suggestion ? '<br><span class="text-sm">' + suggestion + '</span>' : '');
+  el.classList.add('visible');
+}
+
+/** Cache une alerte */
+function cacherAlerte(elementId) {
+  const el = document.getElementById(elementId);
+  el.classList.remove('visible');
+  el.innerHTML = '';
+}
+
+/** Affiche / cache un spinner */
+function afficherSpinner(id, visible) {
+  document.getElementById(id).classList.toggle('visible', visible);
+}
+
+/** Parse une chaine CSV simple (gere les guillemets) */
+function parseCSV(text) {
+  const lignes = [];
+  let courant = '';
+  let dansGuillemets = false;
+  const rows = [];
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (dansGuillemets) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          courant += '"';
+          i++;
+        } else {
+          dansGuillemets = false;
+        }
+      } else {
+        courant += c;
+      }
+    } else {
+      if (c === '"') {
+        dansGuillemets = true;
+      } else if (c === ',') {
+        lignes.push(courant);
+        courant = '';
+      } else if (c === '\n' || (c === '\r' && text[i + 1] === '\n')) {
+        lignes.push(courant);
+        courant = '';
+        if (c === '\r') i++;
+        rows.push([...lignes]);
+        lignes.length = 0;
+      } else if (c === '\r') {
+        lignes.push(courant);
+        courant = '';
+        rows.push([...lignes]);
+        lignes.length = 0;
+      } else {
+        courant += c;
+      }
+    }
+  }
+  // Derniere ligne
+  if (courant || lignes.length > 0) {
+    lignes.push(courant);
+    rows.push([...lignes]);
+  }
+
+  return rows;
+}
+
+// ============================================================
+// Gestion des benevoles
+// ============================================================
+
+/** Liste des benevoles en memoire */
+let benevoles = [];
+
+/** Charge les benevoles depuis localStorage */
+function chargerBenevoles() {
+  try {
+    const data = localStorage.getItem(CONFIG.LS_KEY_BENEVOLES);
+    if (data) {
+      benevoles = JSON.parse(data);
+    }
+  } catch (e) {
+    console.warn('Erreur chargement benevoles:', e);
+    benevoles = [];
+  }
+}
+
+/** Sauvegarde les benevoles dans localStorage */
+function sauverBenevoles() {
+  localStorage.setItem(CONFIG.LS_KEY_BENEVOLES, JSON.stringify(benevoles));
+}
+
+/** Affiche la table des benevoles */
+function afficherTableBenevoles() {
+  const tbody = document.getElementById('tbody-benevoles');
+  tbody.innerHTML = '';
+
+  if (benevoles.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1.5rem">Aucun benevole enregistre.</td></tr>';
+    return;
+  }
+
+  benevoles.forEach(function(b, index) {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + escapeHtml(b.prenom) + '</td>' +
+      '<td>' + escapeHtml(b.nom) + '</td>' +
+      '<td>' + escapeHtml(b.role || '') + '</td>' +
+      '<td><button class="btn btn-danger btn-sm" data-index="' + index + '" title="Supprimer">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>' +
+      '</button></td>';
+    tbody.appendChild(tr);
+  });
+
+  // Ecouteurs de suppression
+  tbody.querySelectorAll('[data-index]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const idx = parseInt(this.getAttribute('data-index'));
+      benevoles.splice(idx, 1);
+      sauverBenevoles();
+      afficherTableBenevoles();
+      // Re-croiser si des resultats sont charges
+      if (resultatsCharges.length > 0) {
+        croiserEtAfficher();
+      }
+    });
+  });
+}
+
+/** Ajoute un benevole manuellement */
+function ajouterBenevole() {
+  const prenom = document.getElementById('add-prenom').value.trim();
+  const nom = document.getElementById('add-nom').value.trim();
+  const role = document.getElementById('add-role').value.trim();
+
+  if (!prenom || !nom) return;
+
+  benevoles.push({ prenom: prenom, nom: nom, role: role, actif: true });
+  sauverBenevoles();
+  afficherTableBenevoles();
+
+  // Vider les champs
+  document.getElementById('add-prenom').value = '';
+  document.getElementById('add-nom').value = '';
+  document.getElementById('add-role').value = '';
+
+  // Re-croiser si resultats charges
+  if (resultatsCharges.length > 0) {
+    croiserEtAfficher();
+  }
+}
+
+/** Synchronise les benevoles depuis Google Sheets */
+async function syncGoogleSheets() {
+  const sheetId = document.getElementById('input-sheet').value.trim();
+  if (!sheetId) {
+    afficherAlerte('alert-sheet', 'Veuillez entrer un Google Sheet ID.');
+    return;
+  }
+
+  // Sauvegarder le sheet ID
+  localStorage.setItem(CONFIG.LS_KEY_SHEET, sheetId);
+
+  cacherAlerte('alert-sheet');
+  cacherAlerte('alert-sheet-ok');
+  afficherSpinner('spinner-benevoles', true);
+
+  try {
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv';
+    const response = await fetch(proxiedUrl(csvUrl));
+
+    if (!response.ok) {
+      throw new Error('Erreur HTTP ' + response.status);
+    }
+
+    const text = await response.text();
+    const rows = parseCSV(text);
+
+    if (rows.length < 2) {
+      throw new Error('Le fichier semble vide ou ne contient pas de donnees.');
+    }
+
+    // Trouver les indices des colonnes (premiere ligne = en-tetes)
+    const header = rows[0].map(function(h) { return normaliser(h); });
+    const iPrenom = header.findIndex(function(h) { return h.includes('prenom'); });
+    const iNom = header.findIndex(function(h) { return h.includes('nom') && !h.includes('prenom'); });
+    const iRole = header.findIndex(function(h) { return h.includes('role'); });
+    const iActif = header.findIndex(function(h) { return h.includes('actif'); });
+
+    if (iPrenom === -1 || iNom === -1) {
+      throw new Error('Colonnes "Prenom" et "Nom" introuvables dans le Google Sheet.');
+    }
+
+    const nouveaux = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const prenom = (row[iPrenom] || '').trim();
+      const nom = (row[iNom] || '').trim();
+      if (!prenom && !nom) continue;
+
+      const actif = iActif !== -1 ? normaliser(row[iActif] || '') : 'oui';
+      if (actif === 'non') continue;
+
+      nouveaux.push({
+        prenom: prenom,
+        nom: nom,
+        role: iRole !== -1 ? (row[iRole] || '').trim() : '',
+        actif: true
+      });
+    }
+
+    benevoles = nouveaux;
+    sauverBenevoles();
+    afficherTableBenevoles();
+
+    const alertOk = document.getElementById('alert-sheet-ok');
+    alertOk.textContent = nouveaux.length + ' benevole(s) synchronise(s) avec succes.';
+    alertOk.classList.add('visible');
+
+    // Re-croiser si resultats charges
+    if (resultatsCharges.length > 0) {
+      croiserEtAfficher();
+    }
+
+  } catch (err) {
+    console.error('Erreur sync Google Sheets:', err);
+    let suggestion = '';
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      suggestion = 'Verifiez que le proxy CORS est accessible et que le Sheet est public.';
+    } else if (err.message.includes('404') || err.message.includes('400')) {
+      suggestion = 'Verifiez que le Google Sheet ID est correct et que le document est publie/public.';
+    }
+    afficherAlerte('alert-sheet', 'Erreur lors de la synchronisation : ' + escapeHtml(err.message), suggestion);
+  } finally {
+    afficherSpinner('spinner-benevoles', false);
+  }
+}
+
+// ============================================================
+// Recuperation des resultats
+// ============================================================
+
+/** Resultats charges en memoire */
+let resultatsCharges = [];
+
+/** Tente de recuperer les resultats depuis RaceResult */
+async function chargerResultats() {
+  const url = document.getElementById('input-url').value.trim();
+  cacherAlerte('alert-url');
+
+  if (!url) {
+    afficherAlerte('alert-url', 'Veuillez entrer une URL.');
+    return;
+  }
+
+  const eventId = extraireEventId(url);
+  if (!eventId) {
+    afficherAlerte('alert-url', 'Impossible d\'extraire l\'ID de l\'evenement.', 'L\'URL doit contenir un nombre, par exemple : https://my.raceresult.com/388451/');
+    return;
+  }
+
+  afficherSpinner('spinner-resultats', true);
+  document.getElementById('dropzone').classList.remove('visible');
+
+  // Endpoint 1 : list
+  const url1 = 'https://my.raceresult.com/' + eventId + '/RRPublish/data/list?contest=0&listformat=json';
+  // Endpoint 2 : search
+  const url2 = 'https://my.raceresult.com/' + eventId + '/RRPublish/data/search?search=&listformat=json';
+
+  let data = null;
+
+  try {
+    const resp1 = await fetch(proxiedUrl(url1));
+    if (resp1.ok) {
+      const text = await resp1.text();
+      data = JSON.parse(text);
+    }
+  } catch (e) {
+    console.warn('Endpoint list echoue:', e);
+  }
+
+  if (!data) {
+    try {
+      const resp2 = await fetch(proxiedUrl(url2));
+      if (resp2.ok) {
+        const text = await resp2.text();
+        data = JSON.parse(text);
+      }
+    } catch (e) {
+      console.warn('Endpoint search echoue:', e);
+    }
+  }
+
+  afficherSpinner('spinner-resultats', false);
+
+  if (!data) {
+    // Afficher la zone d'upload
+    document.getElementById('dropzone').classList.add('visible');
+    afficherAlerte('alert-url', 'Impossible de recuperer les resultats depuis RaceResult.', 'Vous pouvez deposer un fichier CSV/XLSX ci-dessous.');
+    return;
+  }
+
+  resultatsCharges = parseRaceResultJSON(data);
+
+  if (resultatsCharges.length === 0) {
+    afficherAlerte('alert-url', 'Aucun resultat trouve dans les donnees RaceResult.');
+    return;
+  }
+
+  document.getElementById('resultats-info').textContent = resultatsCharges.length + ' resultat(s) charge(s) depuis RaceResult.';
+  croiserEtAfficher();
+}
+
+/** Parse les differents formats JSON de RaceResult */
+function parseRaceResultJSON(data) {
+  const resultats = [];
+
+  // Format 1 : objet avec cles numeriques, chaque valeur est un tableau ou objet
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    // Verifier si c'est { "data": { ... } } ou directement les entrees
+    let entries = data;
+    if (data.data && typeof data.data === 'object') {
+      entries = data.data;
+    }
+
+    const keys = Object.keys(entries);
+
+    // Tester si les valeurs sont des tableaux (format liste)
+    if (keys.length > 0) {
+      const premiere = entries[keys[0]];
+
+      if (Array.isArray(premiere)) {
+        // Format tableau : chaque entree est un tableau de valeurs
+        // Essayer de deviner les indices des colonnes
+        keys.forEach(function(key) {
+          const row = entries[key];
+          if (!Array.isArray(row) || row.length < 3) return;
+
+          const r = extraireChamps(row);
+          if (r) resultats.push(r);
+        });
+      } else if (typeof premiere === 'object') {
+        // Format objet avec cles nommees
+        keys.forEach(function(key) {
+          const obj = entries[key];
+          if (typeof obj !== 'object') return;
+
+          const r = extraireChampsObjet(obj);
+          if (r) resultats.push(r);
+        });
+      }
+    }
+  }
+
+  // Format 2 : tableau directement
+  if (Array.isArray(data)) {
+    data.forEach(function(item) {
+      if (Array.isArray(item)) {
+        const r = extraireChamps(item);
+        if (r) resultats.push(r);
+      } else if (typeof item === 'object') {
+        const r = extraireChampsObjet(item);
+        if (r) resultats.push(r);
+      }
+    });
+  }
+
+  return resultats;
+}
+
+/** Extrait les champs depuis un tableau (format RaceResult liste) */
+function extraireChamps(row) {
+  // RaceResult renvoie typiquement des tableaux avec les champs dans un ordre variable
+  // On cherche des patterns : rang, nom, prenom, temps, categorie, dossard
+  // Heuristique : chercher les champs par position ou pattern
+
+  let rang = '', prenom = '', nom = '', tempsOfficiel = '', tempsNet = '', categorie = '', dossard = '';
+
+  // Parcourir le tableau et identifier les champs
+  const strs = row.map(function(v) { return String(v || '').trim(); });
+
+  // Le rang est souvent le premier nombre
+  for (let i = 0; i < strs.length; i++) {
+    const s = strs[i];
+
+    // Temps (format HH:MM:SS ou MM:SS ou H:MM:SS)
+    if (/^\d{1,2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s)) {
+      if (!tempsOfficiel) {
+        tempsOfficiel = s;
+      } else if (!tempsNet) {
+        tempsNet = s;
+      }
+      continue;
+    }
+
+    // Dossard : petit nombre souvent en debut
+    if (/^\d{1,5}$/.test(s) && !rang && parseInt(s) > 0) {
+      rang = s;
+      continue;
+    }
+
+    // Dossard supplementaire si le rang est deja identifie
+    if (/^\d{1,5}$/.test(s) && rang && !dossard) {
+      dossard = s;
+      continue;
+    }
+
+    // Categorie (souvent courte, avec chiffres et lettres : M30, SEN, V1H, etc.)
+    if (/^[A-Z0-9]{2,6}[HF]?$/i.test(s) && s.length <= 8 && !categorie) {
+      categorie = s;
+      continue;
+    }
+
+    // Noms : les chaines restantes
+    if (s.length > 0 && !/^\d+$/.test(s)) {
+      if (!nom) {
+        nom = s;
+      } else if (!prenom) {
+        prenom = s;
+      }
+    }
+  }
+
+  if (!nom && !prenom) return null;
+
+  return {
+    rang: rang,
+    prenom: prenom,
+    nom: nom,
+    tempsOfficiel: tempsOfficiel,
+    tempsNet: tempsNet || tempsOfficiel,
+    categorie: categorie,
+    dossard: dossard
+  };
+}
+
+/** Extrait les champs depuis un objet avec cles nommees */
+function extraireChampsObjet(obj) {
+  // Chercher les cles connues (insensible a la casse)
+  const cles = {};
+  Object.keys(obj).forEach(function(k) {
+    cles[normaliser(k)] = obj[k];
+  });
+
+  function trouver(patterns) {
+    for (let i = 0; i < patterns.length; i++) {
+      const keys = Object.keys(cles);
+      for (let j = 0; j < keys.length; j++) {
+        if (keys[j].includes(patterns[i])) {
+          return String(cles[keys[j]] || '').trim();
+        }
+      }
+    }
+    return '';
+  }
+
+  const nom = trouver(['lastname', 'nom', 'name', 'nachname', 'familyname']);
+  const prenom = trouver(['firstname', 'prenom', 'vorname', 'givenname']);
+  const rang = trouver(['rank', 'rang', 'place', 'platz', 'position']);
+  const tempsOfficiel = trouver(['time', 'temps', 'zeit', 'officialtime', 'finish', 'chiptime', 'guntime']);
+  const tempsNet = trouver(['nettime', 'net', 'netto', 'tempsnet', 'chiptime']);
+  const categorie = trouver(['category', 'categorie', 'cat', 'agegroup', 'ak', 'klasse']);
+  const dossard = trouver(['bib', 'dossard', 'startnr', 'number', 'numero']);
+
+  if (!nom && !prenom) return null;
+
+  return {
+    rang: rang,
+    prenom: prenom,
+    nom: nom,
+    tempsOfficiel: tempsOfficiel,
+    tempsNet: tempsNet || tempsOfficiel,
+    categorie: categorie,
+    dossard: dossard
+  };
+}
+
+// ============================================================
+// Gestion du fichier upload (CSV / XLSX)
+// ============================================================
+
+/** Gere le fichier depose ou selectionne */
+function gererFichier(file) {
+  if (!file) return;
+
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const rows = parseCSV(e.target.result);
+      resultatsCharges = parseCSVResultats(rows);
+      document.getElementById('resultats-info').textContent = resultatsCharges.length + ' resultat(s) charge(s) depuis le fichier.';
+      document.getElementById('dropzone').classList.remove('visible');
+      cacherAlerte('alert-url');
+      croiserEtAfficher();
+    };
+    reader.readAsText(file);
+  } else if (ext === 'xlsx') {
+    afficherAlerte('alert-url', 'Le format XLSX necessite une librairie externe. Veuillez exporter en CSV depuis Excel.', 'Dans Excel : Fichier > Enregistrer sous > CSV (separateur virgule)');
+  } else {
+    afficherAlerte('alert-url', 'Format non supporte. Veuillez utiliser un fichier CSV.');
+  }
+}
+
+/** Parse les resultats depuis un CSV generique */
+function parseCSVResultats(rows) {
+  if (rows.length < 2) return [];
+
+  // Identifier les colonnes par en-tete
+  const header = rows[0].map(function(h) { return normaliser(h); });
+
+  function trouverIndex(patterns) {
+    for (let i = 0; i < patterns.length; i++) {
+      const idx = header.findIndex(function(h) { return h.includes(patterns[i]); });
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  }
+
+  const iRang = trouverIndex(['rang', 'rank', 'place', 'position', 'classement']);
+  const iNom = trouverIndex(['nom', 'lastname', 'name', 'nachname']);
+  const iPrenom = trouverIndex(['prenom', 'firstname', 'vorname']);
+  const iTemps = trouverIndex(['temps', 'time', 'finish', 'officiel']);
+  const iTempsNet = trouverIndex(['net', 'netto', 'chip']);
+  const iCat = trouverIndex(['cat', 'categorie', 'category', 'agegroup']);
+  const iDossard = trouverIndex(['dossard', 'bib', 'numero', 'number', 'startnr']);
+
+  const resultats = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const nom = iNom !== -1 ? (r[iNom] || '').trim() : '';
+    const prenom = iPrenom !== -1 ? (r[iPrenom] || '').trim() : '';
+    if (!nom && !prenom) continue;
+
+    resultats.push({
+      rang: iRang !== -1 ? (r[iRang] || '').trim() : String(i),
+      nom: nom,
+      prenom: prenom,
+      tempsOfficiel: iTemps !== -1 ? (r[iTemps] || '').trim() : '',
+      tempsNet: iTempsNet !== -1 ? (r[iTempsNet] || '').trim() : (iTemps !== -1 ? (r[iTemps] || '').trim() : ''),
+      categorie: iCat !== -1 ? (r[iCat] || '').trim() : '',
+      dossard: iDossard !== -1 ? (r[iDossard] || '').trim() : ''
+    });
+  }
+
+  return resultats;
+}
+
+// ============================================================
+// Croisement des donnees
+// ============================================================
+
+/** Croise les resultats avec la base de benevoles */
+function matchBenevoles(resultats, listeBenevoles) {
+  if (listeBenevoles.length === 0) return resultats; // Si aucun benevole, afficher tout
+
+  const benevNormalises = listeBenevoles.map(function(b) {
+    return {
+      prenom: normaliser(b.prenom),
+      nom: normaliser(b.nom),
+      complet: normaliser(b.prenom + ' ' + b.nom)
+    };
+  });
+
+  return resultats.filter(function(res) {
+    const resPrenom = normaliser(res.prenom);
+    const resNom = normaliser(res.nom);
+    const resComplet = resPrenom + ' ' + resNom;
+    const resCompletInverse = resNom + ' ' + resPrenom;
+
+    return benevNormalises.some(function(b) {
+      // Correspondance exacte prenom + nom
+      if (b.prenom === resPrenom && b.nom === resNom) return true;
+      // Correspondance inversee (nom et prenom inverses dans les resultats)
+      if (b.prenom === resNom && b.nom === resPrenom) return true;
+      // Correspondance complete
+      if (b.complet === resComplet || b.complet === resCompletInverse) return true;
+      // Correspondance partielle (un prenom compose contient le prenom du benevole)
+      if (b.nom === resNom && resPrenom.includes(b.prenom)) return true;
+      if (b.nom === resNom && b.prenom.includes(resPrenom) && resPrenom.length > 2) return true;
+      if (b.nom === resPrenom && resNom.includes(b.prenom)) return true;
+      // Correspondance partielle sur nom compose
+      if (b.prenom === resPrenom && resNom.includes(b.nom)) return true;
+      if (b.prenom === resPrenom && b.nom.includes(resNom) && resNom.length > 2) return true;
+      return false;
+    });
+  });
+}
+
+/** Resultats filtres en memoire */
+let resultatsCroises = [];
+
+/** Effectue le croisement et affiche les resultats */
+function croiserEtAfficher() {
+  resultatsCroises = matchBenevoles(resultatsCharges, benevoles);
+
+  // Trier par rang (numerique)
+  resultatsCroises.sort(function(a, b) {
+    const ra = parseInt(a.rang) || 99999;
+    const rb = parseInt(b.rang) || 99999;
+    return ra - rb;
+  });
+
+  afficherResultats(resultatsCroises);
+}
+
+// ============================================================
+// Interface utilisateur - Affichage des resultats
+// ============================================================
+
+/** Affiche les resultats dans le tableau */
+function afficherResultats(resultats) {
+  const tbody = document.getElementById('tbody-resultats');
+  const table = document.getElementById('table-resultats');
+  const badge = document.getElementById('badge-count');
+  const exportBtns = document.getElementById('export-buttons');
+  const info = document.getElementById('resultats-info');
+
+  if (resultats.length === 0) {
+    table.classList.add('hidden');
+    badge.classList.add('hidden');
+    exportBtns.style.display = 'none';
+    info.textContent = resultatsCharges.length > 0
+      ? resultatsCharges.length + ' resultat(s) charge(s) — aucun benevole trouve.'
+      : 'Chargez un evenement pour voir les resultats.';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  resultats.forEach(function(r) {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + escapeHtml(r.rang) + '</td>' +
+      '<td>' + escapeHtml(r.nom) + '</td>' +
+      '<td>' + escapeHtml(r.prenom) + '</td>' +
+      '<td>' + escapeHtml(r.tempsOfficiel) + '</td>' +
+      '<td>' + escapeHtml(r.tempsNet) + '</td>' +
+      '<td>' + escapeHtml(r.categorie) + '</td>' +
+      '<td>' + escapeHtml(r.dossard) + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  table.classList.remove('hidden');
+  badge.textContent = resultats.length;
+  badge.classList.remove('hidden');
+  exportBtns.style.display = 'flex';
+
+  if (benevoles.length > 0) {
+    info.textContent = resultats.length + ' benevole(s) trouve(s) sur ' + resultatsCharges.length + ' resultats.';
+  } else {
+    info.textContent = resultats.length + ' resultat(s) affiches (aucun filtre benevole actif).';
+  }
+}
+
+/** Echappe le HTML pour eviter les injections */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// Export
+// ============================================================
+
+/** Exporte les resultats en CSV et declenche le telechargement */
+function exporterCSV() {
+  if (resultatsCroises.length === 0) return;
+
+  const lignes = ['Rang,Nom,Prenom,Temps officiel,Temps net,Categorie,Dossard'];
+  resultatsCroises.forEach(function(r) {
+    lignes.push([
+      csvEscape(r.rang),
+      csvEscape(r.nom),
+      csvEscape(r.prenom),
+      csvEscape(r.tempsOfficiel),
+      csvEscape(r.tempsNet),
+      csvEscape(r.categorie),
+      csvEscape(r.dossard)
+    ].join(','));
+  });
+
+  const blob = new Blob(['\uFEFF' + lignes.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'resultats_benevoles.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/** Echappe une valeur pour CSV */
+function csvEscape(val) {
+  val = String(val || '');
+  if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+    return '"' + val.replace(/"/g, '""') + '"';
+  }
+  return val;
+}
+
+/** Copie le tableau en texte tabule dans le presse-papier */
+async function copierTableau() {
+  if (resultatsCroises.length === 0) return;
+
+  const lignes = ['Rang\tNom\tPrenom\tTemps officiel\tTemps net\tCategorie\tDossard'];
+  resultatsCroises.forEach(function(r) {
+    lignes.push([r.rang, r.nom, r.prenom, r.tempsOfficiel, r.tempsNet, r.categorie, r.dossard].join('\t'));
+  });
+
+  try {
+    await navigator.clipboard.writeText(lignes.join('\n'));
+    const feedback = document.getElementById('copy-feedback');
+    feedback.classList.add('visible');
+    setTimeout(function() {
+      feedback.classList.remove('visible');
+    }, 1500);
+  } catch (err) {
+    console.error('Erreur copie:', err);
+  }
+}
+
+// ============================================================
+// Interface utilisateur - Evenements
+// ============================================================
+
+/** Initialise tous les ecouteurs d'evenements */
+function initEvenements() {
+  // Charger les resultats
+  document.getElementById('btn-charger').addEventListener('click', chargerResultats);
+  document.getElementById('input-url').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') chargerResultats();
+  });
+
+  // Synchroniser benevoles
+  document.getElementById('btn-sync').addEventListener('click', syncGoogleSheets);
+
+  // Ajouter benevole
+  document.getElementById('btn-add-benevole').addEventListener('click', ajouterBenevole);
+
+  // Export
+  document.getElementById('btn-csv').addEventListener('click', exporterCSV);
+  document.getElementById('btn-copier').addEventListener('click', copierTableau);
+
+  // Dropzone
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file-input');
+
+  dropzone.addEventListener('click', function() {
+    fileInput.click();
+  });
+  dropzone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+  dropzone.addEventListener('dragleave', function() {
+    dropzone.classList.remove('dragover');
+  });
+  dropzone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+      gererFichier(e.dataTransfer.files[0]);
+    }
+  });
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files.length > 0) {
+      gererFichier(fileInput.files[0]);
+    }
+  });
+
+  // Accordion parametres
+  document.getElementById('toggle-settings').addEventListener('click', function() {
+    this.classList.toggle('open');
+    document.getElementById('settings-body').classList.toggle('open');
+  });
+
+  // Sauvegarder parametres
+  document.getElementById('btn-save-settings').addEventListener('click', function() {
+    const proxy = document.getElementById('input-proxy').value.trim();
+    const sheet = document.getElementById('input-sheet-settings').value.trim();
+
+    if (proxy) {
+      localStorage.setItem(CONFIG.LS_KEY_PROXY, proxy);
+    } else {
+      localStorage.removeItem(CONFIG.LS_KEY_PROXY);
+    }
+
+    if (sheet) {
+      localStorage.setItem(CONFIG.LS_KEY_SHEET, sheet);
+      document.getElementById('input-sheet').value = sheet;
+    }
+
+    // Feedback visuel
+    this.textContent = 'Sauvegarde !';
+    this.classList.remove('btn-primary');
+    this.classList.add('btn-success');
+    var btn = this;
+    setTimeout(function() {
+      btn.textContent = 'Sauvegarder';
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-primary');
+    }, 1200);
+  });
+}
+
+// ============================================================
+// Initialisation
+// ============================================================
+
+function init() {
+  // Charger les benevoles depuis localStorage
+  chargerBenevoles();
+  afficherTableBenevoles();
+
+  // Restaurer les parametres
+  const proxyStocke = localStorage.getItem(CONFIG.LS_KEY_PROXY);
+  document.getElementById('input-proxy').value = proxyStocke || CONFIG.PROXY_URL_DEFAULT;
+
+  const sheetStocke = localStorage.getItem(CONFIG.LS_KEY_SHEET);
+  if (sheetStocke) {
+    document.getElementById('input-sheet').value = sheetStocke;
+    document.getElementById('input-sheet-settings').value = sheetStocke;
+  }
+
+  // Initialiser les ecouteurs
+  initEvenements();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
