@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RaceResult Benevoles</title>
+<!-- PDF.js pour lecture des fichiers PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 /* ===== Reset et base ===== */
 *, *::before, *::after {
@@ -471,8 +473,8 @@ tbody tr:hover {
   <!-- ===== ZONE UPLOAD (AFFICHEE SI ENDPOINTS ECHOUENT) ===== -->
   <section class="card dropzone" id="dropzone">
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    <p>Les endpoints RaceResult n'ont pas repondu.<br>Deposez un fichier CSV ou XLSX ici, ou cliquez pour selectionner.</p>
-    <input type="file" id="file-input" accept=".csv,.xlsx" class="hidden">
+    <p>Les endpoints RaceResult n'ont pas repondu.<br>Deposez un fichier CSV, XLSX ou PDF ici, ou cliquez pour selectionner.</p>
+    <input type="file" id="file-input" accept=".csv,.xlsx,.pdf" class="hidden">
   </section>
 
   <!-- ===== RESULTATS ===== -->
@@ -1127,9 +1129,97 @@ function gererFichier(file) {
     reader.readAsText(file);
   } else if (ext === 'xlsx') {
     afficherAlerte('alert-url', 'Le format XLSX necessite une librairie externe. Veuillez exporter en CSV depuis Excel.', 'Dans Excel : Fichier > Enregistrer sous > CSV (separateur virgule)');
+  } else if (ext === 'pdf') {
+    afficherSpinner('spinner-resultats', true);
+    extrairePDF(file).then(function(rows) {
+      afficherSpinner('spinner-resultats', false);
+      if (rows.length === 0) {
+        afficherAlerte('alert-url', 'Aucune donnee trouvee dans le PDF. Verifiez le format.');
+        return;
+      }
+      resultatsCharges = parseCSVResultats(rows);
+      document.getElementById('resultats-info').textContent = resultatsCharges.length + ' resultat(s) charge(s) depuis le PDF.';
+      document.getElementById('dropzone').classList.remove('visible');
+      cacherAlerte('alert-url');
+      croiserEtAfficher();
+    }).catch(function(err) {
+      afficherSpinner('spinner-resultats', false);
+      afficherAlerte('alert-url', 'Erreur lecture PDF: ' + err.message);
+    });
   } else {
-    afficherAlerte('alert-url', 'Format non supporte. Veuillez utiliser un fichier CSV.');
+    afficherAlerte('alert-url', 'Format non supporte. Veuillez utiliser un fichier CSV ou PDF.');
   }
+}
+
+/** Extrait et parse les donnees d'un fichier PDF */
+async function extrairePDF(file) {
+  // Initialiser PDF.js
+  if (typeof pdfjsLib === 'undefined') {
+    throw new Error('PDF.js non charge. Reessayez.');
+  }
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  let texte = '';
+
+  // Extraire le texte de toutes les pages
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map(function(item) { return item.str; }).join(' ');
+    texte += pageText + '\n';
+  }
+
+  // Parser le texte en lignes
+  return parseTextResultats(texte);
+}
+
+/** Parse le texte brut d'un PDF et le convertit en tableau de donnees */
+function parseTextResultats(texte) {
+  // Chercher des patterns qui ressemblent a des donnees de course
+  // Pattern: nombre + nom + prenom + temps
+  const lines = texte.split('\n');
+  const rows = [];
+
+  // En-tete par defaut (si PDF sans structure claire)
+  rows.push(['Rang', 'Nom', 'Prenom', 'Temps', 'Temps Net', 'Categorie', 'Dossard']);
+
+  // Chercher des lignes avec des donnees
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line || line.length < 5) continue;
+
+    // Chercher un rang (nombre au debut)
+    const rangMatch = line.match(/^(\d+)\s+(.+)/);
+    if (!rangMatch) continue;
+
+    const rang = rangMatch[1];
+    const reste = rangMatch[2].trim();
+
+    // Essayer de parser: NOM PRENOM TEMPS CATEGORIE DOSSARD
+    // Format typique RaceResult: "123 DUPONT Jean 1:23:45 23:40 H40 456"
+    const parts = reste.split(/\s+/);
+
+    if (parts.length < 2) continue;
+
+    // Supposer que le premier mot est le NOM en majuscules
+    const nom = parts[0];
+    const prenom = parts[1] || '';
+    const temps = parts[2] || '';
+    const tempsNet = parts[3] || temps;
+    const categorie = parts[4] || '';
+    const dossard = parts[5] || '';
+
+    // Ajouter si ca ressemble a une donnee valide
+    if (nom && nom.length > 1 && (temps.includes(':') || temps === '')) {
+      rows.push([rang, nom, prenom, temps, tempsNet, categorie, dossard]);
+    }
+  }
+
+  return rows.length > 1 ? rows : [];
 }
 
 /** Parse les resultats depuis un CSV generique */
