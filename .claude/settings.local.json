@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 skills/ui-ux-pro-max/scripts/search.py \"sports tracking dashboard minimal data table\" --design-system -p \"RaceResult Benevoles\")",
+      "Bash(python skills/ui-ux-pro-max/scripts/search.py \"sports tracking dashboard minimal data table\" --design-system -p \"RaceResult Benevoles\")",
+      "Bash(where python:*)",
+      "Bash(where py:*)",
+      "Bash(\"C:\\\\Python314\\\\python.exe\" src/ui-ux-pro-max/scripts/search.py \"sports tracking dashboard minimal data table\" --design-system -p \"RaceResult Benevoles\")",
+      "Bash(\"C:\\\\Python314\\\\python.exe\" src/ui-ux-pro-max/scripts/search.py \"table responsive form input loading\" --domain ux)"
+    ]
+  }
+}

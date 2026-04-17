@@ -13,21 +13,25 @@
 }
 
 :root {
-  --accent: #178CBA;
-  --accent-hover: #126e94;
-  --bg: #F8FAFC;
-  --text: #1E293B;
-  --muted: #475569;
-  --border: #E2E8F0;
-  --row-hover: #F1F5F9;
-  --success: #16A34A;
+  --accent: #0099DD;
+  --accent-hover: #006699;
+  --primary: #462B1A;
+  --secondary: #FFFF00;
+  --bg: #FFFFFF;
+  --text: #462B1A;
+  --muted: #7D5A3A;
+  --border: #8B6F47;
+  --row-hover: #DDF2FF;
+  --success: #FFFF00;
   --error: #DC2626;
   --error-bg: #FEF2F2;
-  --error-border: #FECACA;
+  --error-border: #8B4545;
   --radius: 8px;
   --transition: 200ms ease;
   --font-ui: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-data: 'Fira Code', 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+  --gradient: linear-gradient(180deg, #FFFF00 0%, #0099DD 100%);
+  --bg-secondary: #F5F5F5;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -47,8 +51,8 @@ body {
 
 /* ===== Typographie ===== */
 h1 { font-size: 1.5rem; font-weight: 700; }
-h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--text); }
-h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--primary); }
+h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); }
 p { color: var(--muted); }
 
 /* ===== Layout ===== */
@@ -60,10 +64,11 @@ p { color: var(--muted); }
 
 /* ===== Header ===== */
 .app-header {
-  background: #fff;
-  border-bottom: 1px solid var(--border);
+  background: var(--gradient);
+  border-bottom: 2px solid var(--primary);
   padding: 1rem 0;
   margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 .app-header .container {
   display: flex;
@@ -71,26 +76,37 @@ p { color: var(--muted); }
   gap: 0.75rem;
 }
 .header-icon {
-  width: 32px;
-  height: 32px;
-  color: var(--accent);
+  width: 40px;
+  height: 40px;
+  color: var(--primary);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .header-text h1 {
   line-height: 1.2;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
 .header-text p {
   font-size: 0.85rem;
   margin-top: 0.1rem;
+  color: #FFFFFF;
+  text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.15);
 }
 
 /* ===== Sections / Cartes ===== */
 .card {
-  background: #fff;
+  background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem;
   margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.card h3 {
+  color: var(--primary);
 }
 
 /* ===== Formulaires ===== */
@@ -99,7 +115,7 @@ label {
   font-size: 0.85rem;
   font-weight: 500;
   margin-bottom: 0.3rem;
-  color: var(--text);
+  color: var(--primary);
 }
 
 input[type="text"],
@@ -111,14 +127,14 @@ input[type="url"] {
   font-family: var(--font-ui);
   font-size: 0.9rem;
   color: var(--text);
-  background: #fff;
-  transition: border-color var(--transition);
+  background: #FFFFFF;
+  transition: border-color var(--transition), box-shadow var(--transition);
   outline: none;
 }
 input[type="text"]:focus,
 input[type="url"]:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(23,140,186,0.12);
+  box-shadow: 0 0 0 3px rgba(0,153,221,0.12);
 }
 
 .input-row {
@@ -136,13 +152,13 @@ input[type="url"]:focus {
   align-items: center;
   gap: 0.4rem;
   padding: 0.6rem 1rem;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   font-family: var(--font-ui);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background var(--transition), opacity var(--transition);
+  transition: background var(--transition), opacity var(--transition), border-color var(--transition);
   white-space: nowrap;
   min-height: 44px;
   min-width: 44px;
@@ -152,22 +168,25 @@ input[type="url"]:focus {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: #FFFFFF;
+  border-color: var(--primary);
 }
 .btn-primary:hover { background: var(--accent-hover); }
 
 .btn-success {
-  background: var(--success);
-  color: #fff;
+  background: var(--secondary);
+  color: var(--primary);
+  border-color: var(--primary);
+  font-weight: 600;
 }
-.btn-success:hover { background: #15803d; }
+.btn-success:hover { background: #E6E600; }
 
 .btn-outline {
   background: transparent;
   color: var(--accent);
   border: 1px solid var(--accent);
 }
-.btn-outline:hover { background: rgba(23,140,186,0.06); }
+.btn-outline:hover { background: rgba(0,153,221,0.08); }
 
 .btn-danger {
   background: transparent;
@@ -199,16 +218,20 @@ input[type="url"]:focus {
   font-size: 0.85rem;
   margin-bottom: 1rem;
   display: none;
+  border-left: 4px solid;
 }
 .alert-error {
-  background: var(--error-bg);
-  border: 1px solid var(--error-border);
+  background: #FFF0F0;
+  border-left-color: var(--error);
+  border-color: var(--primary);
   color: var(--error);
 }
 .alert-success {
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
-  color: var(--success);
+  background: #FFFACD;
+  border-left-color: #0099DD;
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 500;
 }
 .alert.visible { display: block; }
 
@@ -217,7 +240,7 @@ input[type="url"]:focus {
   display: none;
   position: absolute;
   inset: 0;
-  background: rgba(248,250,252,0.7);
+  background: rgba(255,255,255,0.8);
   z-index: 10;
   align-items: center;
   justify-content: center;
@@ -228,10 +251,11 @@ input[type="url"]:focus {
 .spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
+  border: 3px solid #F5F5F5;
+  border-top-color: #0099DD;
+  border-right-color: #FFFF00;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
@@ -251,7 +275,7 @@ table {
   font-size: 0.85rem;
 }
 thead {
-  background: var(--bg);
+  background: var(--primary);
   position: sticky;
   top: 0;
   z-index: 2;
@@ -261,7 +285,7 @@ th {
   padding: 0.6rem 0.75rem;
   font-weight: 600;
   font-size: 0.8rem;
-  color: var(--muted);
+  color: #FFFFFF;
   border-bottom: 2px solid var(--border);
   white-space: nowrap;
 }
@@ -273,6 +297,12 @@ td {
 }
 tbody tr {
   transition: background var(--transition);
+}
+tbody tr:nth-child(odd) {
+  background: #FFFFFF;
+}
+tbody tr:nth-child(even) {
+  background: var(--bg-secondary);
 }
 tbody tr:hover {
   background: var(--row-hover);
@@ -288,11 +318,12 @@ tbody tr:hover {
   cursor: pointer;
   transition: border-color var(--transition), background var(--transition);
   display: none;
+  background: #FAFAFA;
 }
 .dropzone.visible { display: block; }
 .dropzone.dragover {
   border-color: var(--accent);
-  background: rgba(23,140,186,0.04);
+  background: rgba(0,153,221,0.05);
 }
 .dropzone p { margin-top: 0.5rem; font-size: 0.85rem; }
 
@@ -307,13 +338,14 @@ tbody tr:hover {
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text);
+  color: var(--primary);
   cursor: pointer;
   padding: 0;
   min-height: 44px;
 }
 .accordion-toggle svg {
   transition: transform var(--transition);
+  color: var(--accent);
 }
 .accordion-toggle.open svg.chevron {
   transform: rotate(180deg);
@@ -322,10 +354,16 @@ tbody tr:hover {
   max-height: 0;
   overflow: hidden;
   transition: max-height 300ms ease, padding 300ms ease;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: #FFFFFF;
+  padding: 0 1.25rem;
 }
 .accordion-body.open {
   max-height: 600px;
-  padding-top: 1rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
 }
 
 /* ===== Formulaire ajout benevole ===== */
@@ -346,12 +384,13 @@ tbody tr:hover {
   align-items: center;
   justify-content: center;
   background: var(--accent);
-  color: #fff;
+  color: #FFFFFF;
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 999px;
   padding: 0.1rem 0.55rem;
   margin-left: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,153,221,0.3);
 }
 
 /* ===== Feedback copie ===== */
@@ -359,7 +398,7 @@ tbody tr:hover {
   opacity: 0;
   transition: opacity var(--transition);
   font-size: 0.8rem;
-  color: var(--success);
+  color: var(--accent);
   font-weight: 500;
 }
 .copy-feedback.visible {
@@ -395,12 +434,17 @@ tbody tr:hover {
 <!-- ===== EN-TETE ===== -->
 <header class="app-header">
   <div class="container">
-    <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="5" r="3"/>
-      <path d="M12 8v4"/>
-      <path d="M9 12l-2 8 5-3 5 3-2-8"/>
-      <path d="M7 20l-1 2"/>
-      <path d="M17 20l1 2"/>
+    <svg class="header-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Fond badge bleu -->
+      <rect width="40" height="40" rx="8" fill="#0099DD"/>
+      <!-- Minaret stylisé marron -->
+      <rect x="17" y="10" width="6" height="18" fill="#462B1A"/>
+      <!-- Toit du minaret -->
+      <polygon points="20,8 16,12 24,12" fill="#462B1A"/>
+      <!-- Accent jaune -->
+      <circle cx="20" cy="26" r="5" fill="#FFFF00"/>
+      <!-- Petite fenêtre -->
+      <rect x="18" y="16" width="4" height="2" fill="#FFFF00"/>
     </svg>
     <div class="header-text">
       <h1>RaceResult Benevoles</h1>
