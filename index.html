@@ -473,9 +473,8 @@ tbody tr:hover {
 <!-- ===== EN-TETE ===== -->
 <header class="app-header">
   <div class="container">
-    <svg class="header-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Fond badge bleu -->
-      <rect width="40" height="40" rx="8" fill="#0099DD"/>
+    <svg class="header-icon" viewBox="0 0 601.50128 629.14148" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <defs
       id="defs1"><clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath45"><rect
@@ -676,7 +675,8 @@ tbody tr:hover {
 // Configuration
 // ============================================================
 const CONFIG = {
-  PROXY_URL_DEFAULT: 'https://raceresult-proxy.cymusic29.workers.dev',
+  PROXY_URL_DEFAULT: 'https://raceresult-proxy.cypriendlt.workers.dev',
+  SHEET_ID_DEFAULT: '1GiuNBzFecQ8pNOMTcL42mRFk9HYMnfmKtJYhYwQSskA',
   LS_KEY_BENEVOLES: 'benevoles',
   LS_KEY_PROXY: 'proxy_url',
   LS_KEY_SHEET: 'sheet_id',
@@ -1734,20 +1734,23 @@ function parseLignesPDF(lignes) {
     return !/[a-zà-ÿ]/.test(tok);
   }
 
-  const rows = [['Rang', 'Nom', 'Prenom', 'Temps', 'Temps Net', 'Categorie', 'Dossard']];
+  const rows = [['Rang', 'Nom', 'Prenom', 'Temps', 'Temps Net', 'Categorie', 'Dossard', 'Parcours']];
   let categorieCourante = '';
+  let parcoursCourant = '';
 
   lignes.forEach(function(ligne) {
     if (!ligne || ligne.length < 5) return;
 
     const tempsMatch = ligne.match(regexTemps);
 
-    // Ligne sans temps et courte : potentielle entete de categorie
+    // Ligne sans temps et courte : potentielle entete de parcours/categorie
     if (!tempsMatch) {
       if (ligne.length < 80) {
         const upper = ligne.toUpperCase();
-        if (/^(CADETS?|JUNIORS?|ESPOIRS?|SENIORS?|MASTERS?|VETERANS?|M\d|V\d|SE|SEN|CA|JU|ES)\b/i.test(upper) ||
-            /^\d+\s?KM\b/i.test(upper) ||
+        // Distance (ex: "30km (30400m - 415m D+)") → parcours
+        if (/^\d+\s?KM\b/i.test(upper)) {
+          parcoursCourant = ligne.replace(/\s+/g, ' ').trim();
+        } else if (/^(CADETS?|JUNIORS?|ESPOIRS?|SENIORS?|MASTERS?|VETERANS?|M\d|V\d|SE|SEN|CA|JU|ES)\b/i.test(upper) ||
             /^(HOMMES?|FEMMES?|GARCONS?|GARÇONS?|FILLES?)\b/i.test(upper)) {
           categorieCourante = ligne.replace(/\s+/g, ' ').trim();
         }
@@ -1762,9 +1765,10 @@ function parseLignesPDF(lignes) {
     const tokens = avant.split(/\s+/);
     if (tokens.length < 3) return;
 
-    // Rang : premier token purement numerique
-    if (!/^\d+$/.test(tokens[0])) return;
-    const rang = tokens[0];
+    // Rang : premier token numerique (tolere le '.' final : "1." → "1")
+    const rangMatch = tokens[0].match(/^(\d+)\.?$/);
+    if (!rangMatch) return;
+    const rang = rangMatch[1];
     let i = 1;
 
     // Dossard optionnel : 1-6 chiffres juste apres le rang
@@ -1774,18 +1778,23 @@ function parseLignesPDF(lignes) {
       i++;
     }
 
-    // NOM = tokens consecutifs en majuscules
+    // NOM = tokens consecutifs en majuscules (ignore les parentheses type "(1)")
     const nomParts = [];
-    while (i < tokens.length && estMajuscule(tokens[i])) {
+    while (i < tokens.length) {
+      if (/^\(\d+\)$/.test(tokens[i])) { i++; continue; }
+      if (!estMajuscule(tokens[i])) break;
       nomParts.push(tokens[i]);
       i++;
     }
     if (nomParts.length === 0) return;
 
-    // Prenom = tokens consecutifs en casse mixte (jusqu'a retomber sur majuscules / chiffres)
+    // Prenom = tokens en casse mixte (skip les parentheses type "(1)" = rang cat)
     const prenomParts = [];
-    while (i < tokens.length && !estMajuscule(tokens[i]) && !/^\d+$/.test(tokens[i])) {
-      prenomParts.push(tokens[i]);
+    while (i < tokens.length) {
+      const t = tokens[i];
+      if (/^\(\d+\)$/.test(t)) { i++; continue; }
+      if (estMajuscule(t) || /^\d+$/.test(t)) break;
+      prenomParts.push(t);
       i++;
     }
     if (prenomParts.length === 0) return;
@@ -1801,7 +1810,7 @@ function parseLignesPDF(lignes) {
       break;
     }
 
-    rows.push([rang, nomParts.join(' '), prenomParts.join(' '), tempsOff, tempsNet, categorieCourante, dossard]);
+    rows.push([rang, nomParts.join(' '), prenomParts.join(' '), tempsOff, tempsNet, categorieCourante, dossard, parcoursCourant]);
   });
 
   return rows.length > 1 ? rows : [];
@@ -1857,6 +1866,37 @@ function parseCSVResultats(rows) {
 // Croisement des donnees
 // ============================================================
 
+/** Tokenise un nom/prenom sur tirets et espaces (Jean-Marie -> [jean, marie]) */
+function tokeniserNom(s) {
+  return s.split(/[-\s]+/).filter(function(t) { return t.length > 0; });
+}
+
+/**
+ * Compare deux prenoms/noms au niveau token. Evite les faux positifs type
+ * "Marie" qui matcherait "Jean-Marie" en substring, ou "Eric" dans "Frederic".
+ * Regles :
+ *  - identiques (apres normalisation) → OK
+ *  - meme set de tokens (Jean-Claude == Jean Claude) → OK
+ *  - un simple (1 token) vs un compose : OK seulement si le simple est le PREMIER token du compose
+ */
+function prenomEquivalent(a, b) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const ta = tokeniserNom(a);
+  const tb = tokeniserNom(b);
+  if (ta.length === tb.length) {
+    // Multi-tokens : tous doivent matcher (ordre indifferent)
+    const setB = tb.slice().sort().join('|');
+    const setA = ta.slice().sort().join('|');
+    return setA === setB;
+  }
+  // Longueurs differentes : le plus court doit etre un singleton egal au 1er token du plus long
+  const court = ta.length < tb.length ? ta : tb;
+  const long = ta.length < tb.length ? tb : ta;
+  if (court.length !== 1) return false;
+  return court[0] === long[0];
+}
+
 /** Croise les resultats avec la base de benevoles */
 function matchBenevoles(resultats, listeBenevoles) {
   if (listeBenevoles.length === 0) return resultats; // Si aucun benevole, afficher tout
@@ -1864,31 +1904,19 @@ function matchBenevoles(resultats, listeBenevoles) {
   const benevNormalises = listeBenevoles.map(function(b) {
     return {
       prenom: normaliser(b.prenom),
-      nom: normaliser(b.nom),
-      complet: normaliser(b.prenom + ' ' + b.nom)
+      nom: normaliser(b.nom)
     };
   });
 
   return resultats.filter(function(res) {
     const resPrenom = normaliser(res.prenom);
     const resNom = normaliser(res.nom);
-    const resComplet = resPrenom + ' ' + resNom;
-    const resCompletInverse = resNom + ' ' + resPrenom;
 
     return benevNormalises.some(function(b) {
-      // Correspondance exacte prenom + nom
-      if (b.prenom === resPrenom && b.nom === resNom) return true;
-      // Correspondance inversee (nom et prenom inverses dans les resultats)
-      if (b.prenom === resNom && b.nom === resPrenom) return true;
-      // Correspondance complete
-      if (b.complet === resComplet || b.complet === resCompletInverse) return true;
-      // Correspondance partielle (un prenom compose contient le prenom du benevole)
-      if (b.nom === resNom && resPrenom.includes(b.prenom)) return true;
-      if (b.nom === resNom && b.prenom.includes(resPrenom) && resPrenom.length > 2) return true;
-      if (b.nom === resPrenom && resNom.includes(b.prenom)) return true;
-      // Correspondance partielle sur nom compose
-      if (b.prenom === resPrenom && resNom.includes(b.nom)) return true;
-      if (b.prenom === resPrenom && b.nom.includes(resNom) && resNom.length > 2) return true;
+      // Match standard : prenom ET nom equivalents (token-level)
+      if (prenomEquivalent(b.prenom, resPrenom) && prenomEquivalent(b.nom, resNom)) return true;
+      // Match inverse (resultats avec nom et prenom inverses)
+      if (prenomEquivalent(b.prenom, resNom) && prenomEquivalent(b.nom, resPrenom)) return true;
       return false;
     });
   });
@@ -2194,11 +2222,9 @@ function init() {
   const proxyStocke = localStorage.getItem(CONFIG.LS_KEY_PROXY);
   document.getElementById('input-proxy').value = proxyStocke || CONFIG.PROXY_URL_DEFAULT;
 
-  const sheetStocke = localStorage.getItem(CONFIG.LS_KEY_SHEET);
-  if (sheetStocke) {
-    document.getElementById('input-sheet').value = sheetStocke;
-    document.getElementById('input-sheet-settings').value = sheetStocke;
-  }
+  const sheetStocke = localStorage.getItem(CONFIG.LS_KEY_SHEET) || CONFIG.SHEET_ID_DEFAULT;
+  document.getElementById('input-sheet').value = sheetStocke;
+  document.getElementById('input-sheet-settings').value = sheetStocke;
 
   // Initialiser les ecouteurs
   initEvenements();

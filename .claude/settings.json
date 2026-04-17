@@ -47,7 +47,13 @@
       "Bash(python c:/tmp_nord/inspect3.py)",
       "Bash(python c:/tmp_nord/validate_parse.py)",
       "Bash(python c:/tmp_nord/validate_pdf.py)",
-      "Bash(python c:/tmp_nord/validate_pdf2.py)"
+      "Bash(python c:/tmp_nord/validate_pdf2.py)",
+      "Bash(awk 'NR>=476 && NR<=545 {print NR\": \"length\\($0\\)\" chars\"}' \"c:/Users/cyprien.delattre/Documents/Chtis_resultats/raceresult-benevoles/index.html\")",
+      "Bash(awk 'NR==495 {for\\(i=0;i<length\\($0\\);i+=200\\)print substr\\($0,i+1,200\\)}' \"c:/Users/cyprien.delattre/Documents/Chtis_resultats/raceresult-benevoles/index.html\")",
+      "Bash(awk 'NR>=535 && NR<=545' \"c:/Users/cyprien.delattre/Documents/Chtis_resultats/raceresult-benevoles/index.html\")",
+      "Bash(awk 'NR>=474 && NR<=494' \"c:/Users/cyprien.delattre/Documents/Chtis_resultats/raceresult-benevoles/index.html\")",
+      "Bash(pip install *)",
+      "Bash(PYTHONIOENCODING=utf-8 python)"
     ],
     "additionalDirectories": [
       "c:\\tmp_athle",

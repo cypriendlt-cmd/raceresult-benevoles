@@ -12,6 +12,7 @@ Tracker incrémental des sites/formats de résultats. L'objectif : qu'à terme n
 | ACN Timing | `acn-chrono.fr`, `acn-timing.com` | JSON API | `recupererResultatsDepuisACN()` | `Groups[].SlaveRows`, mapping via `TableDefinition.Columns` (FieldIdx) |
 | athle.fr (FFA) | `bases.athle.fr` | HTML ASP.NET paginé | `recupererResultatsDepuisAthleFr()` | pagination `frmposition=0..N`, 250/page, fetch parallèle. `parcours=''` (1 course par URL) |
 | Nordsport | `nordsport-chronometrage.fr` | HTML iframe → XML `.clax` | `recupererResultatsDepuisNordsport()` | iframe src → `?f=…clax`, XML UTF-8 BOM, `<Engages>`+`<Resultats>` joints par bib `d`, `parcours` = attribut `p` |
+| ChronoLap | `chronolap.net` (PDF) | PDF multi-courses | `parseLignesPDF()` (token-parser generique) | Format `Rang. Dos NOM Prenom (n) M/F (n) Cat Club Temps [ TpsNet ] Vit Moy`. Sections `30km (...)` captees comme `parcours`. Tolerant au `.` final du rang et aux `(n)` parenthesees |
 
 ## Fallback générique
 

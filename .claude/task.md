@@ -29,6 +29,16 @@ Vérifié (Python replay du parser) :
 - Page 0 athle.fr compétition 294421 : 250 rows extraites, rang 1→250, noms + catégories OK
 - 19 pages détectées via regex `Page X/NN` → ~4750 coureurs total attendu
 
+### Ajout 2026-04-17 — ChronoLap PDF + Match strict prénom + Icône SVG ✅
+
+- [x] **ChronoLap PDF** : token-parser étendu pour `Rang. Dos NOM Prenom (n) M/F (n) Cat Club Temps [TpsNet] Vit Moy`. Rang tolérant au `.` final, skip des `(\d+)` parenthésés, séparation `parcours` (distance) / `categorie`.
+- [x] **Matching strict prénom** : `prenomEquivalent()` tokenise sur `-`/espaces. Refuse les substring abusifs (Jean-Marie ≠ Marie, Frédéric ≠ Eric). Accepte les équivalences légitimes (Jean = Jean-Pierre en 1er token, Jean Claude = Jean-Claude).
+- [x] **Icône header** : remplacement du logo SVG par `g29.svg` (Ch'tis Marathoniens complet). Fix viewBox `0 0 601.50128 629.14148` + balise `<defs>` ouvrante manquante.
+
+Vérifié (Python replay) :
+- Trail du Caillou 2026 (chronolap.net) : 1402 coureurs parsés, 3 parcours (30/23/13 km), noms composés OK (LE ROUX, Jean Didier DEPRECQ, Marc-Antoine FLINOIS)
+- Matching : 10/10 cas — 2 bugs refusés, 8 vrais positifs conservés
+
 ### Ajout 2026-04-17 — Nordsport (.clax) + PDF token-parser + UX multi-courses ✅
 
 - [x] **Nordsport** : détection URL, fetch HTML → iframe `src` → paramètre `?f=…clax` → fetch XML
