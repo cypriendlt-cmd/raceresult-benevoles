@@ -595,7 +595,12 @@ function getProxyUrl() {
 
 /** Construit l'URL proxifiee */
 function proxiedUrl(targetUrl) {
-  return getProxyUrl() + '/proxy?url=' + encodeURIComponent(targetUrl);
+  var proxyUrl = getProxyUrl();
+  // Enlever trailing slash si présent
+  if (proxyUrl.endsWith('/')) {
+    proxyUrl = proxyUrl.slice(0, -1);
+  }
+  return proxyUrl + '/proxy?url=' + encodeURIComponent(targetUrl);
 }
 
 // ============================================================
