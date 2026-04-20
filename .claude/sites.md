@@ -13,6 +13,7 @@ Tracker incrémental des sites/formats de résultats. L'objectif : qu'à terme n
 | athle.fr (FFA) | `bases.athle.fr` | HTML ASP.NET paginé | `recupererResultatsDepuisAthleFr()` | pagination `frmposition=0..N`, 250/page, fetch parallèle. `parcours=''` (1 course par URL) |
 | Nordsport | `nordsport-chronometrage.fr` | HTML iframe → XML `.clax` | `recupererResultatsDepuisNordsport()` | iframe src → `?f=…clax`, XML UTF-8 BOM, `<Engages>`+`<Resultats>` joints par bib `d`, `parcours` = attribut `p` |
 | ChronoLap | `chronolap.net` (PDF) | PDF multi-courses | `parseLignesPDF()` (token-parser generique) | Format `Rang. Dos NOM Prenom (n) M/F (n) Cat Club Temps [ TpsNet ] Vit Moy`. Sections `30km (...)` captees comme `parcours`. Tolerant au `.` final du rang et aux `(n)` parenthesees |
+| ProLiveSport | `prolivesport.fr/result/ID` | JSON API 2-steps | `recupererResultatsDepuisProLiveSport()` | `/apiws/result/raceList/{eventId}` → liste courses, puis `/apiws/result/indiv/{eventId}/{raceCode}` par course. Filtre `rank >= 99000` + `time=00:00:00`. **Requiert header `access-token: AUTH_PLSWS_V2`** → passé en query `x-token` + worker CF doit le convertir. `parcours` = `{distance} km` |
 
 ## Fallback générique
 
@@ -30,6 +31,21 @@ Tracker incrémental des sites/formats de résultats. L'objectif : qu'à terme n
 - [ ] L'Echappée Belle / Sportkipik
 - [ ] Adeorun (adeorun.com)
 - [ ] Challenge du Hainaut (hainaut-chrono.com si existe)
+
+## Worker Cloudflare — forward de headers custom
+
+Certains sites (ProLiveSport) exigent un header d'auth (`access-token`). Les proxies CORS standards ne forwardent pas les headers custom (CORS preflight bloque). **Solution** : faire reconnaître au worker certaines query strings préfixées (ex: `x-token=...` → header `access-token: ...`).
+
+```js
+// Dans le handler /proxy du worker :
+const targetUrl = url.searchParams.get('url');
+const fwdHeaders = new Headers({ 'User-Agent': 'Mozilla/5.0' });
+const xToken = url.searchParams.get('x-token');
+if (xToken) fwdHeaders.set('access-token', xToken);
+const upstream = await fetch(targetUrl, { headers: fwdHeaders });
+```
+
+Sans ce patch, l'adapter ProLiveSport échoue avec `access-token empty`.
 
 ## Protocole pour ajouter un nouveau site
 

@@ -1167,6 +1167,28 @@ async function chargerResultats() {
   }
 
   afficherSpinner('spinner-resultats', true);
+
+  // ProLiveSport — API JSON (raceList puis indiv par course)
+  if (url.includes('prolivesport.fr')) {
+    try {
+      const eventId = extrairePLSEventId(url);
+      if (!eventId) throw new Error('URL ProLiveSport sans eventId (format attendu /result/ID/...)');
+      resultatsCharges = await recupererResultatsDepuisProLiveSport(eventId);
+      afficherSpinner('spinner-resultats', false);
+      if (resultatsCharges.length === 0) {
+        afficherAlerte('alert-url', 'Aucun resultat trouve sur ProLiveSport.');
+        return;
+      }
+      document.getElementById('resultats-info').textContent = resultatsCharges.length + ' resultat(s) charge(s) depuis ProLiveSport.';
+      croiserEtAfficher();
+      return;
+    } catch (error) {
+      afficherSpinner('spinner-resultats', false);
+      afficherAlerte('alert-url', 'Erreur ProLiveSport: ' + error.message, 'Essayez avec un fichier PDF/CSV.');
+      return;
+    }
+  }
+
   // Nordsport Chronométrage — iframe qui charge un fichier .clax (XML)
   if (url.includes('nordsport-chronometrage.fr')) {
     try {
@@ -1267,6 +1289,61 @@ async function chargerResultats() {
     afficherSpinner('spinner-resultats', false);
     afficherAlerte('alert-url', 'Erreur RaceResult: ' + err.message, 'Vous pouvez deposer un fichier CSV/PDF ci-dessous.');
   }
+}
+
+/** Extrait l'eventId d'une URL ProLiveSport : .../result/{id}(/...)? */
+function extrairePLSEventId(url) {
+  const m = url.match(/prolivesport\.fr\/(?:V2\/)?result\/(\d+)/i);
+  return m ? m[1] : null;
+}
+
+/**
+ * Fetch API ProLiveSport : raceList puis indiv par course, merge et filtre finishers.
+ * Le token `access-token` passe via query string `x-token` (le worker Cloudflare doit
+ * le transformer en header vers l'API cible — impossible de passer un header custom
+ * a travers un proxy CORS standard).
+ */
+async function recupererResultatsDepuisProLiveSport(eventId) {
+  const base = 'https://api.prolivesport.fr/apiws/result';
+  function proxifiePLS(path) {
+    return proxiedUrl(base + path) + '&x-token=AUTH_PLSWS_V2';
+  }
+
+  // Etape 1 : liste des courses de l'evenement
+  const respList = await fetch(proxifiePLS('/raceList/' + eventId + '/'));
+  if (!respList.ok) throw new Error('raceList HTTP ' + respList.status);
+  const list = await respList.json();
+  if (list.success === false) throw new Error('API: ' + (list.message || 'inconnu') + ' (le proxy CORS doit forwarder x-token → access-token)');
+  const courses = (list.result || []).filter(function(c) { return c.race && c.distance !== '999'; });
+  if (courses.length === 0) throw new Error('Aucune course dans raceList');
+
+  // Etape 2 : fetch des classements en parallele
+  const fetches = courses.map(function(c) {
+    return fetch(proxifiePLS('/indiv/' + eventId + '/' + c.race + '/'))
+      .then(function(r) { return r.ok ? r.json() : { result: [] }; })
+      .then(function(j) { return { course: c, rows: j.result || [] }; });
+  });
+  const resultats = [];
+  const blocs = await Promise.all(fetches);
+  blocs.forEach(function(b) {
+    const parcours = b.course.distance + ' km';
+    b.rows.forEach(function(x) {
+      const rang = parseInt(x.rank, 10);
+      if (!rang || rang >= 99000) return; // 99992/99999 = non classe
+      if (!x.time || x.time === '00:00:00') return;
+      resultats.push({
+        rang: x.rank,
+        nom: (x.lastname || '').trim(),
+        prenom: (x.firstname || '').trim(),
+        tempsOfficiel: x.time,
+        tempsNet: x.time,
+        categorie: (x.category || '').trim(),
+        parcours: parcours,
+        dossard: (x.number || '').trim()
+      });
+    });
+  });
+  return resultats;
 }
 
 /** Fetch le config RaceResult puis la list configuree (flux officiel RRPublish) */

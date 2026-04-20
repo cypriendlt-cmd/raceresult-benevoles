@@ -53,7 +53,22 @@
       "Bash(awk 'NR>=535 && NR<=545' \"c:/Users/cyprien.delattre/Documents/Chtis_resultats/raceresult-benevoles/index.html\")",
       "Bash(awk 'NR>=474 && NR<=494' \"c:/Users/cyprien.delattre/Documents/Chtis_resultats/raceresult-benevoles/index.html\")",
       "Bash(pip install *)",
-      "Bash(PYTHONIOENCODING=utf-8 python)"
+      "Bash(PYTHONIOENCODING=utf-8 python)",
+      "Bash(curl -s -A \"Mozilla/5.0\" \"https://www.prolivesport.fr/result/1127/0\" -o /c/tmp_nord/pls.html)",
+      "Bash(curl -s -A \"Mozilla/5.0\" \"https://www.prolivesport.fr/main.d102d52e672227ec.js\" -o /c/tmp_nord/pls-main.js)",
+      "Bash(grep -oE 'getResultatRace[^}]{0,400}' /c/tmp_nord/pls-main.js)",
+      "Bash(curl -s -A \"Mozilla/5.0\" -H \"access-token: AUTH_PLSWS_V2\" \"https://api.prolivesport.fr/apiws/result/raceList/1127/\")",
+      "Bash(curl -s -A \"Mozilla/5.0\" -H \"access-token: AUTH_PLSWS_V2\" \"https://api.prolivesport.fr/apiws/result/indiv/1127/NTMF13/\" -o /c/tmp_nord/pls-13.json)",
+      "Bash(curl -s -A \"Mozilla/5.0\" \"https://api.prolivesport.fr/apiws/result/raceList/1127/\")",
+      "Bash(python -c 'import urllib.parse;print\\(urllib.parse.quote\\(\"https://api.prolivesport.fr/apiws/result/raceList/1127/\"\\)\\)')",
+      "Bash(curl -s \"https://raceresult-proxy.cypriendlt.workers.dev/proxy?url=$\\(python -c 'import urllib.parse;print\\(urllib.parse.quote\\(\"https://api.prolivesport.fr/apiws/result/raceList/1127/\"\\)\\)'\\)\")",
+      "Bash(curl -s \"https://api.prolivesport.fr/apiws/result/raceList/1127/?access-token=AUTH_PLSWS_V2\")",
+      "Bash(curl -s \"https://api.prolivesport.fr/apiws/result/raceList/1127/?access_token=AUTH_PLSWS_V2\")",
+      "Bash(curl -s -H \"access-token: AUTH_PLSWS_V2\" \"https://raceresult-proxy.cypriendlt.workers.dev/proxy?url=$\\(python -c 'import urllib.parse;print\\(urllib.parse.quote\\(\"https://api.prolivesport.fr/apiws/result/raceList/1127/\"\\)\\)'\\)\")",
+      "Bash(curl -sv -H \"X-Access-Token: AUTH_PLSWS_V2\" \"https://raceresult-proxy.cypriendlt.workers.dev/proxy?url=$\\(python -c 'import urllib.parse;print\\(urllib.parse.quote\\(\"https://api.prolivesport.fr/apiws/result/raceList/1127/\"\\)\\)'\\)\")",
+      "Bash(curl -s \"https://raceresult-proxy.cypriendlt.workers.dev/proxy?url=$\\(python -c 'import urllib.parse;print\\(urllib.parse.quote\\(\"https://api.prolivesport.fr/apiws/result/raceList/1127/\"\\)\\)'\\)&x-token=AUTH_PLSWS_V2\")",
+      "Bash(python -c 'import urllib.parse;print\\(urllib.parse.quote\\(\"https://my.raceresult.com/388451/RRPublish/data/config\"\\)\\)')",
+      "Bash(curl -s \"https://raceresult-proxy.cypriendlt.workers.dev/proxy?url=$\\(python -c 'import urllib.parse;print\\(urllib.parse.quote\\(\"https://my.raceresult.com/388451/RRPublish/data/config\"\\)\\)'\\)\")"
     ],
     "additionalDirectories": [
       "c:\\tmp_athle",
