@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Course>
+  <Engages>
+    <E d="1523" n="DURANT Jean-Pierre" ca="SEM" p="10 km" x="M"/>
+    <E d="1524" n="MARTIN Sophie" ca="SEF" p="10 km" x="F"/>
+    <E d="2001" n="BERNARD Luc" ca="VEM" p="Semi-marathon" x="M"/>
+    <E d="9999" n="L. G." ca="SEM" p="10 km" x="M"/>
+  </Engages>
+  <Resultats>
+    <R d="1523" t="00h42'15"/>
+    <R d="1524" t="00h45'03"/>
+    <R d="2001" t="01h32'10"/>
+    <R d="9999" t="ABANDON"/>
+  </Resultats>
+</Course>

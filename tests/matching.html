@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Tests matching</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: .4rem .6rem; text-align: left; font-size: 14px; }
+    th { background: #f4f4f4; }
+    .ok { color: green; font-weight: bold; }
+    .ko { color: red; font-weight: bold; }
+    h2 { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Tests matching — fixtures synthétiques</h1>
+  <p>Vérifie le scoring sur 10 cas prévus. Charge la page, regarde les verts/rouges.</p>
+  <table id="out"><thead><tr><th>#</th><th>Cas</th><th>Source</th><th>Attendu</th><th>Obtenu</th><th>Score</th><th>OK ?</th></tr></thead><tbody></tbody></table>
+
+  <script type="module">
+    import { matchBatch, scoreAdherent } from '../src/matching/index.js';
+
+    const adherents = [
+      { id: 'a1', prenom: 'Jean',        nom: 'Dupont',      sexe: 'M' },
+      { id: 'a2', prenom: 'Jean-Pierre', nom: 'Durant',      sexe: 'M' },
+      { id: 'a3', prenom: 'Marie',       nom: 'Martin',      sexe: 'F' },
+      { id: 'a4', prenom: 'Marie',       nom: 'Dupont',      sexe: 'F' },  // homonyme nom
+      { id: 'a5', prenom: 'Corenthin',   nom: 'ADAM',        sexe: 'M' },  // adhérent réel
+      { id: 'a6', prenom: 'Loïc',        nom: 'Adam',        sexe: 'M' },  // accent + casse + homonyme
+      { id: 'a7', prenom: 'Jean Marc',   nom: 'Van De Berg', sexe: 'M' },  // particule
+      { id: 'a8', prenom: 'Pierre',      nom: 'Dupont',      sexe: 'M' },  // 3e homonyme
+    ];
+
+    const cas = [
+      // libellé                                 prenom_source   nom_source       sexe_src  attendu
+      ['Exact',                                  'Jean',         'Dupont',        '',       'certain'],
+      ['Casse+accent',                           'LOIC',         'adam',          '',       'certain'],
+      ['Composé ≡ séparé (Jean-Pierre↔Jean Pierre)', 'Jean Pierre', 'Durant',     '',       'certain'],
+      ['Homonyme + initiale → ambigu (3 Dupont)','J.',           'Dupont',        '',       'ambigu'],
+      ['Homonyme ADAM + initiale → ambigu',      'L.',           'ADAM',          '',       'ambigu'],
+      ['Inversion nom/prénom → certain',         'Dupont',       'Jean',          '',       'certain'],
+      ['Nom homonyme + prénom inconnu → absent', 'Toto',         'Dupont',        '',       'absent'],
+      ['Aucun match',                            'Toto',         'Inconnu',       '',       'absent'],
+      ['Accent côté adhérent',                   'Loic',         'ADAM',          '',       'certain'],
+      ['Particules de+van',                      'Jean Marc',    'van de berg',   '',       'certain'],
+      ['Marie Dupont direct',                    'Marie',        'Dupont',        '',       'certain'],
+      ['Prénom différent même nom → absent',     'Jean',         'Martin',        'M',      'absent'],
+      ['Prénom + nom exacts → certain',          'Marie',        'Martin',        'F',      'certain'],
+    ];
+
+    const lignes = cas.map(([, p, n, s]) => ({ prenom_source: p, nom_source: n, sexe_source: s || null }));
+    const matched = matchBatch(lignes, adherents, [], null);
+
+    const tbody = document.querySelector('#out tbody');
+    let okCount = 0;
+    cas.forEach(([label, p, n, , attendu], i) => {
+      const r = matched[i];
+      const ok = r.match_status === attendu;
+      if (ok) okCount++;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${label}</td>
+        <td>${p} / ${n}</td>
+        <td>${attendu}</td>
+        <td>${r.match_status}</td>
+        <td>${r.match_score}</td>
+        <td class="${ok ? 'ok' : 'ko'}">${ok ? '✅' : '❌'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const h = document.createElement('h2');
+    h.textContent = `Résultat : ${okCount}/${cas.length} OK`;
+    h.className = okCount === cas.length ? 'ok' : 'ko';
+    document.body.appendChild(h);
+  </script>
+</body>
+</html>

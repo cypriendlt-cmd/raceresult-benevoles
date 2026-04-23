@@ -1,0 +1,9 @@
+{
+  "DataFields": ["Bib", "AfficherNom", "Arrivée.GUN"],
+  "data": {
+    "#1_10km": [
+      ["", "", ""],
+      ["999", "DUPONT, Marie", "00:50:00"]
+    ]
+  }
+}

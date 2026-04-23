@@ -1,0 +1,17 @@
+{
+  "raceList": {
+    "success": true,
+    "result": [
+      { "race": "1", "distance": "10", "name": "10 km" },
+      { "race": "2", "distance": "999", "name": "Cumul (à ignorer)" }
+    ]
+  },
+  "indiv_1": {
+    "success": true,
+    "result": [
+      { "rank": "1", "firstname": "Jean", "lastname": "DURANT", "time": "00:42:15", "category": "SEM", "number": "1523" },
+      { "rank": "99999", "firstname": "Non", "lastname": "CLASSE", "time": "00:00:00", "category": "", "number": "9999" },
+      { "rank": "2", "firstname": "Sophie", "lastname": "MARTIN", "time": "00:45:03", "category": "SEF", "number": "1524" }
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ch'tis Marathoniens — Base Club</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..600,0..100,0..1&family=Figtree:wght@400;500;600;700&display=swap">
+
+  <link rel="icon" type="image/svg+xml" href="src/ui/components/logoChtis.svg">
+
+  <link rel="stylesheet" href="src/ui/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <a href="#/dashboard" class="brand" aria-label="Accueil Ch'tis Marathoniens">
+        <span id="brand-logo" style="width:44px; height:44px; display:inline-flex; line-height:0;"></span>
+        <span class="wordmark">
+          Ch'tis Marathoniens
+          <small>Base Club</small>
+        </span>
+      </a>
+      <nav class="nav">
+        <a href="#/dashboard">Accueil</a>
+        <a href="#/import">Importer</a>
+        <a href="#/imports">Imports</a>
+        <a href="#/resultats">Résultats</a>
+        <a href="#/membre">Adhérents</a>
+        <a href="#/club">Chronique</a>
+        <a href="#/revue">À valider</a>
+      </nav>
+    </header>
+
+    <main class="app-main">
+      <div id="view"></div>
+    </main>
+
+    <footer class="app-footer">
+      <span class="muted">Base Club · source Google Sheet · mémoire du club</span>
+    </footer>
+  </div>
+
+  <script type="module">
+    import { injectLogoInto } from './src/ui/components/logo.js';
+    injectLogoInto(document.getElementById('brand-logo'), 44);
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

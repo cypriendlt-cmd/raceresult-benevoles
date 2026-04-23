@@ -1,0 +1,24 @@
+{
+  "TableDefinition": {
+    "Columns": [
+      { "Name": "pos", "DisplayName": "Pos" },
+      { "Name": "#nr", "DisplayName": "#Nr" },
+      { "Name": "unused", "DisplayName": "x" },
+      { "Name": "#name", "DisplayName": "#Name" },
+      { "Name": "filler1", "DisplayName": "" },
+      { "Name": "filler2", "DisplayName": "" },
+      { "Name": "#time", "DisplayName": "#Time" },
+      { "Name": "filler3", "DisplayName": "" },
+      { "Name": "filler4", "DisplayName": "" },
+      { "Name": "#cat", "DisplayName": "#Cat" }
+    ]
+  },
+  "Groups": [
+    {
+      "SlaveRows": [
+        ["1.", "1523", "", "DURANT Jean-Pierre", "", "", "1:07:40 18.8km/h", "", "", "SEM"],
+        ["2.", "1524", "", "MARTIN Sophie", "", "", "1:08:50", "", "", "SEF"]
+      ]
+    }
+  ]
+}

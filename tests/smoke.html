@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Smoke test — store</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    button { padding: .5rem 1rem; margin: .25rem; cursor: pointer; }
+    pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow: auto; max-height: 400px; }
+    .ok { color: green; } .ko { color: red; }
+    h2 { margin-top: 2rem; border-bottom: 1px solid #ddd; padding-bottom: .5rem; }
+  </style>
+</head>
+<body>
+  <h1>Smoke test — couche store</h1>
+  <p>Ouvre la console navigateur en parallèle. Les boutons testent la chaîne complète Sheet ↔ Apps Script.</p>
+
+  <h2>1. Apps Script — test de vie</h2>
+  <button id="btn-ping">Ping Apps Script (GET)</button>
+
+  <h2>2. Lecture des 5 onglets</h2>
+  <button id="btn-read-all">Lire tous les onglets</button>
+
+  <h2>3. Écriture test</h2>
+  <button id="btn-write-import">Écrire un import de test (course fictive + 2 résultats)</button>
+  <button id="btn-write-adherent">Écrire un adhérent de test</button>
+
+  <h2>4. Cache</h2>
+  <button id="btn-cache-clear">Vider le cache localStorage</button>
+
+  <h2>Sortie</h2>
+  <pre id="out">(en attente)</pre>
+
+  <script type="module">
+    import { ping } from '../src/store/appsScript.js';
+    import { read, refreshAll, saveImport, saveAdherent, invalidateAll } from '../src/store/index.js';
+
+    const out = document.getElementById('out');
+    function log(label, data, ok = true) {
+      const cls = ok ? 'ok' : 'ko';
+      out.innerHTML = '<span class="' + cls + '">' + label + '</span>\n' +
+                      JSON.stringify(data, null, 2) + '\n\n' + out.innerHTML;
+    }
+    function logErr(label, err) { log('❌ ' + label, { error: err.message }, false); }
+
+    document.getElementById('btn-ping').onclick = async () => {
+      try { log('✅ Ping OK', await ping()); } catch (e) { logErr('Ping', e); }
+    };
+
+    document.getElementById('btn-read-all').onclick = async () => {
+      try {
+        const data = await refreshAll();
+        log('✅ Lecture OK', {
+          adherents: data.adherents.length + ' lignes',
+          courses: data.courses.length + ' lignes',
+          resultats: data.resultats.length + ' lignes',
+          overrides: data.overrides.length + ' lignes',
+          imports: data.imports.length + ' lignes',
+          preview_adherents: data.adherents.slice(0, 3),
+        });
+      } catch (e) { logErr('Lecture', e); }
+    };
+
+    document.getElementById('btn-write-import').onclick = async () => {
+      try {
+        const r = await saveImport({
+          course: {
+            nom: 'SMOKE TEST — à supprimer',
+            date: new Date().toISOString().slice(0, 10),
+            lieu: 'Test',
+            distance_km: 10,
+            source: 'manuel',
+            source_event_id: 'smoke_' + Date.now(),
+          },
+          resultats: [
+            { prenom_source: 'Test', nom_source: 'Un', temps: '00:45:12', match_status: 'absent' },
+            { prenom_source: 'Test', nom_source: 'Deux', temps: '00:48:55', match_status: 'absent' },
+          ],
+          importMeta: {
+            source: 'manuel',
+            url: 'smoke-test',
+            user: 'dev',
+            lignes_totales: 2,
+            lignes_ignorees: 0,
+            lignes_douteuses: 0,
+          }
+        });
+        log('✅ Import écrit', r);
+      } catch (e) { logErr('Import', e); }
+    };
+
+    document.getElementById('btn-write-adherent').onclick = async () => {
+      try {
+        const r = await saveAdherent({
+          prenom: 'Smoke',
+          nom: 'Test-' + Date.now(),
+          sexe: 'M',
+          actif: 'oui',
+        });
+        log('✅ Adhérent écrit', r);
+      } catch (e) { logErr('Adhérent', e); }
+    };
+
+    document.getElementById('btn-cache-clear').onclick = () => {
+      invalidateAll();
+      log('✅ Cache vidé', {});
+    };
+  </script>
+</body>
+</html>

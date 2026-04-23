@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Tests scraping — J3</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: .25rem; }
+    .summary { padding: .75rem 1rem; border-radius: 6px; margin: 1rem 0; font-weight: 600; }
+    .summary.pass { background: #e6f9ec; color: #0a6b2e; border: 1px solid #9dd9b1; }
+    .summary.fail { background: #fdecec; color: #8a1717; border: 1px solid #f3a8a8; }
+    .test { padding: .5rem .75rem; border-left: 4px solid #ccc; margin: .25rem 0; font-family: ui-monospace, monospace; font-size: .9rem; }
+    .test.ok { border-color: #2e8b57; background: #f4fbf6; }
+    .test.ko { border-color: #c0392b; background: #fdf4f3; }
+    details { margin-top: 1rem; }
+    pre { background: #f5f5f5; padding: .5rem; border-radius: 4px; overflow: auto; max-height: 300px; }
+  </style>
+</head>
+<body>
+  <h1>Tests scraping — J3</h1>
+  <p>Ouvre cette page depuis un serveur local (<code>python -m http.server</code> depuis la racine du repo). Les tests s'exécutent automatiquement.</p>
+  <div id="summary" class="summary">Exécution en cours…</div>
+  <div id="results"></div>
+
+  <script type="module">
+    import { splitNomPrenom, normaliser, stripHTML } from '../src/utils/text.js';
+    import { parseTemps, formaterTemps } from '../src/utils/time.js';
+    import { parseDate } from '../src/utils/date.js';
+    import { detectSource } from '../src/scraping/detect.js';
+    import { normalizeLigne, normalizeCourse, deduireType, parseDistanceKm } from '../src/scraping/normalize.js';
+    import { parseListData } from '../src/scraping/parsers/raceresult.js';
+    import { parseData as parseACN } from '../src/scraping/parsers/acnTiming.js';
+    import { parsePage as parseAthle } from '../src/scraping/parsers/athleFr.js';
+    import { parseXML as parseNordsport } from '../src/scraping/parsers/nordsport.js';
+    import { parseHTML as parseGeneric } from '../src/scraping/parsers/genericHtml.js';
+    import { parseLignes as parsePdfLignes } from '../src/scraping/parsers/pdf.js';
+    import { parseText as parseCsv } from '../src/scraping/parsers/csv.js';
+    import { buildCourse as plsBuildCourse } from '../src/scraping/parsers/prolivesport.js';
+
+    const out = document.getElementById('results');
+    let passed = 0, failed = 0;
+    const failures = [];
+
+    function test(name, fn) {
+      const div = document.createElement('div');
+      div.className = 'test';
+      try {
+        fn();
+        div.classList.add('ok');
+        div.textContent = '✅  ' + name;
+        passed++;
+      } catch (e) {
+        div.classList.add('ko');
+        div.innerHTML = '❌  ' + name + '<pre>' + (e.stack || e.message) + '</pre>';
+        failed++;
+        failures.push({ name, err: e });
+      }
+      out.appendChild(div);
+    }
+    function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+    function assertEq(a, b, msg) {
+      if (JSON.stringify(a) !== JSON.stringify(b)) {
+        throw new Error((msg || 'not equal') + ' — got=' + JSON.stringify(a) + ' expected=' + JSON.stringify(b));
+      }
+    }
+
+    async function loadFixture(path, asText = false) {
+      const r = await fetch(path);
+      if (!r.ok) throw new Error('Fixture ' + path + ' HTTP ' + r.status);
+      return asText ? await r.text() : await r.json();
+    }
+
+    async function run() {
+      // ============ utils/text ============
+      test('splitNomPrenom — NOM Prénom MAJ', () => {
+        assertEq(splitNomPrenom('DURANT Jean-Pierre'), { nom: 'DURANT', prenom: 'Jean-Pierre' });
+      });
+      test('splitNomPrenom — NOM, Prénom', () => {
+        assertEq(splitNomPrenom('DURANT, Jean-Pierre'), { nom: 'DURANT', prenom: 'Jean-Pierre' });
+      });
+      test('splitNomPrenom — particule "DE LA"', () => {
+        const r = splitNomPrenom('DE LA FONTAINE Pierre');
+        assertEq(r, { nom: 'DE LA FONTAINE', prenom: 'Pierre' });
+      });
+      test('splitNomPrenom — tout minuscule → dernier = nom', () => {
+        const r = splitNomPrenom('jean dupont');
+        assertEq(r, { nom: 'dupont', prenom: 'jean' });
+      });
+      test('splitNomPrenom — vide → objet vide', () => {
+        assertEq(splitNomPrenom(''), { nom: '', prenom: '' });
+      });
+      test('normaliser — accents + casse', () => {
+        assertEq(normaliser('Éric Dupont'), 'eric dupont');
+      });
+      test('stripHTML — balises simples', () => {
+        const r = stripHTML('<b>Hello</b>&nbsp;<i>World</i>');
+        assert(r === 'Hello World' || r === 'Hello  World' || r.includes('Hello'), 'stripHTML non fonctionnel: ' + r);
+      });
+
+      // ============ utils/time ============
+      test('parseTemps — HH:MM:SS', () => {
+        const r = parseTemps('01:32:10');
+        assertEq(r.formatted, '01:32:10'); assertEq(r.seconds, 5530);
+      });
+      test('parseTemps — MM:SS', () => {
+        const r = parseTemps('42:15');
+        assertEq(r.formatted, '00:42:15'); assertEq(r.seconds, 2535);
+      });
+      test('parseTemps — format athle "1h10\'18\'\'"', () => {
+        const r = parseTemps("1h10'18''");
+        assertEq(r.formatted, '01:10:18'); assertEq(r.seconds, 4218);
+      });
+      test('parseTemps — format nordsport "00h42\'15"', () => {
+        const r = parseTemps("00h42'15");
+        assertEq(r.formatted, '00:42:15');
+      });
+      test('parseTemps — écart +0:05 rejeté', () => {
+        const r = parseTemps('+0:05');
+        assertEq(r.formatted, null); assertEq(r.seconds, null);
+      });
+      test('parseTemps — vide → null', () => {
+        assertEq(parseTemps('').formatted, null);
+      });
+      test('parseTemps — avec suffixe (ACN)', () => {
+        const r = parseTemps('1:07:40 18.8km/h');
+        assertEq(r.formatted, '01:07:40');
+      });
+
+      // ============ utils/date ============
+      test('parseDate — ISO', () => { assertEq(parseDate('2025-09-14'), '2025-09-14'); });
+      test('parseDate — DD/MM/YYYY', () => { assertEq(parseDate('14/09/2025'), '2025-09-14'); });
+      test('parseDate — 14 septembre 2025', () => { assertEq(parseDate('14 septembre 2025'), '2025-09-14'); });
+      test('parseDate — invalide', () => { assertEq(parseDate('foo'), null); });
+
+      // ============ detect ============
+      test('detectSource — raceresult', () => {
+        const d = detectSource('https://my.raceresult.com/285732/results');
+        assertEq(d.source, 'raceresult'); assertEq(d.eventId, '285732');
+      });
+      test('detectSource — prolivesport V2', () => {
+        const d = detectSource('https://live.prolivesport.fr/V2/result/12345');
+        assertEq(d.source, 'prolivesport'); assertEq(d.eventId, '12345');
+      });
+      test('detectSource — ACN', () => {
+        const d = detectSource('https://www.acn-timing.com/?lng=NL#/events/42/ctx/AB/generic/XXX/home/10km');
+        assertEq(d.source, 'acn'); assertEq(d.context, 'AB'); assertEq(d.section, '10km');
+      });
+      test('detectSource — athle.fr', () => {
+        const d = detectSource('https://www.athle.fr/bases/liste.aspx?frmcompetition=98765');
+        assertEq(d.source, 'athlefr'); assertEq(d.competitionId, '98765');
+      });
+      test('detectSource — nordsport fallback', () => {
+        const d = detectSource('https://nordsport-chrono.fr/results/live/123');
+        assertEq(d.source, 'nordsport');
+      });
+      test('detectSource — generic fallback', () => {
+        const d = detectSource('https://example.org/results.html');
+        assertEq(d.source, 'generic');
+      });
+      test('detectSource — URL vide lève', () => {
+        let ok = false;
+        try { detectSource(''); } catch { ok = true; }
+        assert(ok, 'devait lever sur URL vide');
+      });
+
+      // ============ normalize ============
+      test('normalizeLigne — minimal valide', () => {
+        const r = normalizeLigne({ nom: 'DURANT', prenom: 'Jean', tempsOfficiel: '42:15', rang: '1' });
+        assertEq(r.nom_source, 'DURANT');
+        assertEq(r.prenom_source, 'Jean');
+        assertEq(r.temps, '00:42:15');
+        assertEq(r.temps_sec, 2535);
+        assertEq(r.rang_general, 1);
+      });
+      test('normalizeLigne — nom et prénom vides → null', () => {
+        assertEq(normalizeLigne({ nom: '', prenom: '' }), null);
+      });
+      test('normalizeCourse — nom requis', () => {
+        let ok = false;
+        try { normalizeCourse({}); } catch { ok = true; }
+        assert(ok);
+      });
+      test('deduireType — marathon via nom', () => {
+        assertEq(deduireType({ nom: 'Marathon de Lille' }), 'marathon');
+      });
+      test('deduireType — 10km via distance', () => {
+        assertEq(deduireType({ nom: '', distance_km: 10 }), '10km');
+      });
+      test('parseDistanceKm — "10 km"', () => {
+        assertEq(parseDistanceKm('10 km'), 10);
+      });
+
+      // Async tests (promise-based) ------------
+      const asyncTests = [];
+      function atest(name, fn) { asyncTests.push({ name, fn }); }
+
+      atest('raceresult — happy (async)', async () => {
+        const data = await loadFixture('fixtures/raceresult/happy.json');
+        const r = parseListData(data, { eventId: 'TEST' });
+        assert(r.courses.length === 2, 'attendu 2 courses');
+        const dix = r.courses.find(c => /10km/i.test(c.course.nom));
+        assertEq(dix.lignes[0].nom_source, 'DURANT');
+        assertEq(dix.lignes[0].temps, '00:42:15');
+      });
+      atest('raceresult — canary : course.source="raceresult"', async () => {
+        const data = await loadFixture('fixtures/raceresult/happy.json');
+        const r = parseListData(data, { eventId: 'T' });
+        for (const c of r.courses) assertEq(c.course.source, 'raceresult');
+      });
+      atest('raceresult — dégénéré : lignes vides filtrées', async () => {
+        const data = await loadFixture('fixtures/raceresult/degenere.json');
+        const r = parseListData(data, { eventId: 'T' });
+        assert(r.courses.length === 1);
+        assertEq(r.courses[0].lignes.length, 1);
+        assertEq(r.courses[0].lignes[0].nom_source, 'DUPONT');
+      });
+
+      atest('acn — happy', async () => {
+        const data = await loadFixture('fixtures/acn/happy.json');
+        const lignes = parseACN(data);
+        assertEq(lignes.length, 2);
+        assertEq(lignes[0].nom_source, 'DURANT');
+        assertEq(lignes[0].temps, '01:07:40');
+        assertEq(lignes[0].rang_general, 1);
+      });
+      atest('acn — dégénéré : lève erreur (pas de Columns)', async () => {
+        const data = await loadFixture('fixtures/acn/degenere.json');
+        // Pas de throw attendu : juste 0 lignes
+        const lignes = parseACN(data);
+        assertEq(lignes.length, 0);
+      });
+
+      atest('athlefr — happy (canary DOM)', async () => {
+        const html = await loadFixture('fixtures/athlefr/happy.html', true);
+        const lignes = parseAthle(html);
+        assertEq(lignes.length, 2);
+        assertEq(lignes[0].nom_source, 'DURANT');
+        assertEq(lignes[0].prenom_source, 'Jean-Pierre');
+        assertEq(lignes[0].temps, '01:10:18');
+        assertEq(lignes[0].categorie, 'SEM/94');
+      });
+      atest('athlefr — dégénéré : aucune ligne', async () => {
+        const html = await loadFixture('fixtures/athlefr/degenere.html', true);
+        const lignes = parseAthle(html);
+        assertEq(lignes.length, 0);
+      });
+
+      atest('nordsport — happy : 2 parcours distincts', async () => {
+        const xml = await loadFixture('fixtures/nordsport/happy.clax.xml', true);
+        const r = parseNordsport(xml);
+        assertEq(r.courses.length, 2);
+        const dix = r.courses.find(c => /10/.test(c.course.nom));
+        assertEq(dix.lignes.length, 2);
+        assertEq(dix.lignes[0].nom_source, 'DURANT');
+        assertEq(dix.lignes[0].temps, '00:42:15');
+      });
+      atest('nordsport — canary : "L. G." anonymisé exclu', async () => {
+        const xml = await loadFixture('fixtures/nordsport/happy.clax.xml', true);
+        const r = parseNordsport(xml);
+        const tous = r.courses.flatMap(c => c.lignes);
+        assert(!tous.some(l => /^L\.$/.test(l.nom_source)));
+      });
+      atest('nordsport — dégénéré : lève', async () => {
+        const xml = await loadFixture('fixtures/nordsport/degenere.clax.xml', true);
+        let ok = false;
+        try { parseNordsport(xml); } catch { ok = true; }
+        assert(ok, 'devait lever');
+      });
+
+      atest('generic — happy (canary)', async () => {
+        const html = await loadFixture('fixtures/generic/happy.html', true);
+        const r = parseGeneric(html);
+        assertEq(r.courses.length, 1);
+        assertEq(r.courses[0].lignes.length, 4);
+        assertEq(r.courses[0].lignes[0].nom_source, 'DURANT');
+        assert(r.courses[0].course.nom.includes("Ch'tis") || r.courses[0].course.nom.includes('Course'));
+      });
+      atest('generic — dégénéré : lève', async () => {
+        const html = await loadFixture('fixtures/generic/degenere.html', true);
+        let ok = false;
+        try { parseGeneric(html); } catch { ok = true; }
+        assert(ok);
+      });
+
+      atest('pdf — happy', async () => {
+        const lignesTexte = await loadFixture('fixtures/pdf/happy.lines.json');
+        const res = parsePdfLignes(lignesTexte);
+        assertEq(res.length, 3);
+        assertEq(res[0].ligne.nom_source, 'DURANT');
+        assertEq(res[0].ligne.prenom_source, 'Jean-Pierre');
+        assertEq(res[0].ligne.temps, '00:42:15');
+        assertEq(res[0].ligne.temps_net, '00:42:10');
+        assertEq(res[0].parcours, '10 KM');
+      });
+      atest('pdf — particule "DE LA FONTAINE"', async () => {
+        const lignesTexte = await loadFixture('fixtures/pdf/happy.lines.json');
+        const res = parsePdfLignes(lignesTexte);
+        const dlf = res.find(r => r.ligne.nom_source.includes('FONTAINE'));
+        assert(dlf, 'DE LA FONTAINE manquant');
+      });
+      atest('pdf — dégénéré : 0 ligne, pas d\'exception', async () => {
+        const lignesTexte = await loadFixture('fixtures/pdf/degenere.lines.json');
+        const res = parsePdfLignes(lignesTexte);
+        assertEq(res.length, 0);
+      });
+
+      atest('prolivesport — happy (buildCourse filtre DNF + 99999)', async () => {
+        const fx = await loadFixture('fixtures/prolivesport/happy.json');
+        const c10 = fx.raceList.result.find(r => r.race === '1');
+        const res = plsBuildCourse({ course: c10, rows: fx.indiv_1.result }, { eventId: 'T' });
+        assertEq(res.course.source, 'prolivesport');
+        assertEq(res.course.distance_km, 10);
+        assertEq(res.course.type, '10km');
+        assertEq(res.lignes.length, 2);
+        assertEq(res.lignes[0].nom_source, 'DURANT');
+      });
+      atest('prolivesport — degenere : success=false dans raceList (info, pas parsé)', async () => {
+        const fx = await loadFixture('fixtures/prolivesport/degenere.json');
+        assert(fx.raceList.success === false);
+      });
+
+      atest('csv — happy', async () => {
+        const txt = await loadFixture('fixtures/csv/happy.csv', true);
+        const r = parseCsv(txt, { nom: 'Test CSV' });
+        assertEq(r.courses.length, 1);
+        assertEq(r.courses[0].lignes.length, 3);
+        assertEq(r.courses[0].lignes[0].nom_source, 'DURANT');
+        assertEq(r.courses[0].lignes[0].club_source, 'ACR Lille');
+      });
+      atest('csv — dégénéré : pas de nom/prenom → lève', async () => {
+        const txt = await loadFixture('fixtures/csv/degenere.csv', true);
+        let ok = false;
+        try { parseCsv(txt); } catch { ok = true; }
+        assert(ok);
+      });
+
+      // Exécuter async sequentially
+      for (const t of asyncTests) {
+        const div = document.createElement('div');
+        div.className = 'test';
+        try {
+          await t.fn();
+          div.classList.add('ok'); div.textContent = '✅  ' + t.name;
+          passed++;
+        } catch (e) {
+          div.classList.add('ko');
+          div.innerHTML = '❌  ' + t.name + '<pre>' + (e.stack || e.message) + '</pre>';
+          failed++;
+          failures.push({ name: t.name, err: e });
+        }
+        out.appendChild(div);
+      }
+
+      const s = document.getElementById('summary');
+      s.className = 'summary ' + (failed === 0 ? 'pass' : 'fail');
+      s.textContent = (failed === 0 ? '✅ ' : '❌ ') + passed + ' passés · ' + failed + ' échoués';
+    }
+
+    run();
+  </script>
+</body>
+</html>

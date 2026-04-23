@@ -1,0 +1,12 @@
+{
+  "DataFields": ["Bib", "AfficherNom", "Arrivée.GUN", "Arrivée.CHIP", "ClassementOfficiel", "Category"],
+  "data": {
+    "#1_10km": [
+      ["1523", "DURANT, Jean-Pierre", "00:42:15", "00:42:10", "1.", "SEM"],
+      ["1524", "MARTIN, Sophie", "00:45:03", "00:44:58", "2.", "SEF"]
+    ],
+    "#2_Semi": [
+      ["2012", "DE LA FONTAINE, Pierre", "01:32:10", "01:32:05", "1.", "VEM"]
+    ]
+  }
+}
