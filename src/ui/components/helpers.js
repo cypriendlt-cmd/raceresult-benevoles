@@ -14,7 +14,11 @@ export function el(tag, attrs = {}, children = []) {
   }
   for (const c of [].concat(children)) {
     if (c == null || c === false) continue;
-    node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    if (typeof c === 'string' || typeof c === 'number') {
+      node.appendChild(document.createTextNode(String(c)));
+    } else {
+      node.appendChild(c);
+    }
   }
   return node;
 }

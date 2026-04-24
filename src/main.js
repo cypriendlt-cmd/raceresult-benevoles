@@ -10,26 +10,87 @@ import renderMember         from './ui/views/member.js';
 import renderClubHistory    from './ui/views/club-history.js';
 import renderMatchingReview from './ui/views/matching-review.js';
 import renderCourse         from './ui/views/course.js';
+import renderSondagesList   from './ui/views/sondages-list.js';
+import renderSondagesDetail from './ui/views/sondages-detail.js';
+import renderLoginAdmin     from './ui/views/login-admin.js';
+import renderAdminCoursesList from './ui/views/admin-courses-list.js';
+import renderAdminCourseEdit  from './ui/views/admin-course-edit.js';
+import renderAdminPollDetail  from './ui/views/admin-poll-detail.js';
+import { isAdmin }            from './auth/session.js';
 
-route('#/',          renderDashboard);
-route('#/dashboard', renderDashboard);
-route('#/import',    renderImport);
-route('#/imports',   renderImportsHistory);
-route('#/resultats', renderResultsTable);
-route('#/membre',    renderMember);
-route('#/club',      renderClubHistory);
-route('#/revue',     renderMatchingReview);
-route('#/course',    renderCourse);
+// Toutes les vues "Base Club" (imports, résultats, adhérents, etc.) sont
+// réservées au bureau. Un adhérent simple n'accède qu'au module sondages.
+// Cf. lessons/2026-04-24-module-sondages-acces.md — c'est du masquage UI,
+// pas une sécurité : l'URL directe est interceptée par guardAdmin() qui
+// redirige vers #/sondages. Le code reste téléchargeable côté client.
+function guardAdmin(viewFn) {
+  return (root, params) => {
+    if (!isAdmin()) { location.hash = '#/sondages'; return; }
+    return viewFn(root, params);
+  };
+}
+
+// Route racine : dashboard pour les admins, sondages pour tout le monde sinon.
+route('#/',          (root, params) => isAdmin() ? renderDashboard(root, params) : (location.hash = '#/sondages'));
+route('#/dashboard', guardAdmin(renderDashboard));
+route('#/import',    guardAdmin(renderImport));
+route('#/imports',   guardAdmin(renderImportsHistory));
+route('#/resultats', guardAdmin(renderResultsTable));
+route('#/membre',    guardAdmin(renderMember));
+route('#/club',      guardAdmin(renderClubHistory));
+route('#/revue',     guardAdmin(renderMatchingReview));
+route('#/course',    guardAdmin(renderCourse));
+
+// Module sondages (public) — #/sondages ou #/sondages/<id>
+route('#/sondages', (root, params) => {
+  if (!params.length) return renderSondagesList(root);
+  return renderSondagesDetail(root, params);
+});
+
+// Module sondages (admin) — toutes les routes tombent sur #/admin car le router
+// prend le 2e segment comme clé. On dispatche sur params.
+//
+//   #/admin                              → login
+//   #/admin/courses                      → liste
+//   #/admin/courses/new                  → création
+//   #/admin/courses/<id>                 → édition
+//   #/admin/sondage/<id>                 → détail réponses
+route('#/admin', (root, params) => {
+  if (!params.length)                                return renderLoginAdmin(root);
+  if (params[0] === 'courses' && params.length === 1) return renderAdminCoursesList(root);
+  if (params[0] === 'courses' && params[1] === 'new') return renderAdminCourseEdit(root, []);
+  if (params[0] === 'courses')                        return renderAdminCourseEdit(root, params.slice(1));
+  if (params[0] === 'sondage')                        return renderAdminPollDetail(root, params.slice(1));
+  return renderLoginAdmin(root);
+});
 
 setNotFound((root) => {
   root.appendChild(el('h1', {}, 'Page inconnue'));
   root.appendChild(el('p', {}, [
     'Cette vue n\'existe pas. ',
-    el('a', { href: '#/import' }, 'Retour à l\'import'), '.'
+    el('a', { href: '#/sondages' }, 'Retour aux sondages'), '.'
   ]));
 });
 
+// Route par défaut à l'ouverture : dashboard pour admin, sondages pour le public.
+if (!location.hash || location.hash === '#') {
+  location.hash = isAdmin() ? '#/dashboard' : '#/sondages';
+}
+
 start();
+
+// Les liens admin-only sont masqués aux non-admins (UX, pas sécurité).
+// Seuls "Sondages" et "Admin" restent visibles pour un adhérent simple.
+const BUREAU_HREFS = ['#/dashboard', '#/import', '#/imports', '#/resultats', '#/membre', '#/club', '#/revue'];
+function refreshNav() {
+  const admin = isAdmin();
+  BUREAU_HREFS.forEach(href => {
+    const l = document.querySelector(`.nav a[href="${href}"]`);
+    if (l) l.style.display = admin ? '' : 'none';
+  });
+}
+window.addEventListener('hashchange', refreshNav);
+refreshNav();
 
 window.__nav = navigate;
 

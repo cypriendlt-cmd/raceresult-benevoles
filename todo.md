@@ -101,6 +101,56 @@
 - [ ] Passage `code-simplifier` agent sur chaque module
 - [ ] Passage `fewer-permission-prompts` si pertinent
 
+## J8 — Module sondages / courses ciblées (en cours, 2026-04-24)
+
+**Décisions** : voir [lessons/2026-04-24-module-sondages-acces.md](lessons/2026-04-24-module-sondages-acces.md).
+MVP strict : réponses = oui/non/peut_etre seulement. Pas de covoit, logement, commentaire, distance, export (v2).
+
+### Vague 1 — Fondations (faite 2026-04-24)
+- [x] Apps Script : whitelist étendue à `CoursesCiblees` + `ReponsesSondage` (pas d'ADMIN_TOKEN — option B)
+- [x] `src/config.js` : nouveaux noms d'onglets + `ADMIN_PASSWORD`
+- [x] `docs/SHEETS_SCHEMA.md` : §6 `CoursesCiblees` + §7 `ReponsesSondage`
+- [x] `lessons/2026-04-24-module-sondages-acces.md` : décision finale (option B, zéro auth backend assumé)
+- [x] **Utilisateur** : onglets créés dans la Sheet
+- [ ] ❗ **Utilisateur** : redéployer l'Apps Script (nouvelle version) pour activer la whitelist étendue + `deleteMany`/`deleteWhere` de J5
+
+### Vague 2 — Store + auth (faite 2026-04-24)
+- [x] `src/store/sondages.js` : `listCoursesCiblees`, `listCoursesPubliees`, `getCourseCiblee`, `listReponses`, `listReponsesPourCourse`, `compterReponses`, `saveCourseCiblee`, `deleteCourseCiblee`, `saveReponse`, `trouverReponseExistante`
+- [x] `src/auth/session.js` : `loginAdmin(password)` / `isAdmin()` / `logoutAdmin()` (sessionStorage, UX-only)
+- [x] `src/main.js` : routes câblées (`#/sondages[/id]`, `#/admin[/courses[/new|id]|/sondage/id]`) avec dispatch sur params
+- [x] Nav : lien `Sondages` + `Admin` ajoutés dans `app.html` et `index.html`, `Admin` masqué si pas connecté (`refreshAdminNav` à chaque hashchange)
+- [x] Stubs de vues fonctionnelles (non-polies) : `sondages-list.js`, `sondages-detail.js`, `login-admin.js`, `admin-courses-list.js`, `admin-course-edit.js`, `admin-poll-detail.js`
+
+### Vague 3bis — Choix de distance (2026-04-24)
+- [x] Nouvelle colonne `distance_choisie` dans `ReponsesSondage` (cf. `docs/SHEETS_SCHEMA.md` §7)
+- [x] `parseDistances()` helper dans `src/store/sondages.js` (split `,` ou `;`, trim, filter)
+- [x] `saveReponse` accepte `distance_choisie` optionnel
+- [x] Sondage adhérent : si course ≥ 2 distances → sélecteur en pills, visible seulement si `reponse=oui`, obligatoire ; si 1 seule distance → affectée implicitement ; sinon rien
+- [x] Affichage dans "Qui a répondu" : `Jean Dupont · 10 km`
+- [x] Nouvelle colonne `Distance` dans le tableau admin réponses
+- [ ] ❗ **Utilisateur** : ajouter la colonne `distance_choisie` à droite de `reponse` dans l'onglet `ReponsesSondage` de la Sheet
+
+### Vague 3 — Vues adhérent (mobile-first) — faite 2026-04-24
+- [x] `src/ui/views/sondages-list.js` : grille de cartes (hover lift), hero `card-feature`, badge statut (Ouvert/Clôturé/Délai dépassé), compteurs par carte, dates en français
+- [x] `src/ui/views/sondages-detail.js` : en-tête feature, 3 totaux en gros chiffres (oui/peut-être/non), radios segmented, liste participants en 3 colonnes triées
+- [x] Identification : champ unique `<input list>` + `<datalist>` depuis `read.adherents()`, matching insensible accents/casse au submit, attache `adherent_id` si retrouvé, saisie libre si non
+- [x] Gates écriture : statuts `cloturee` / `archivee` / date_limite dépassée → bandeau + formulaire retiré ; `brouillon` → bandeau info (admin-only); `autoriser_modif_reponse === 'non'` + déjà répondu → refus explicite
+- [x] Correction des `alert('success'/'error')` → `alert('ok'/'err')` dans toutes les vues admin + login (les styles `alert-success` / `alert-error` n'existaient pas)
+- [x] CSS module sondages : `.sondages-grid`, `.sondage-card`, `.sondage-totaux`, `.reponse-choices` (radios stylés via `:checked + label`), `.participants-cols`, breakpoints mobile (colonnes → pile verticale, radios pleine largeur)
+
+### Vague 4 — Vues admin
+- [ ] `src/ui/views/login-admin.js` : saisie token admin
+- [ ] `src/ui/views/admin-courses-list.js` : liste + statut + compteur réponses + actions
+- [ ] `src/ui/views/admin-course-edit.js` : formulaire créa/édition/suppression
+- [ ] `src/ui/views/admin-poll-detail.js` : résumé + tableau réponses (3 compteurs)
+
+### Vague 5 — Tests + simplif
+- [ ] `tests/sondages.html` : 7 cas (admin crée, adhérent répond, adhérent modifie, afficher_participants=non, date_limite dépassée, sondage cloturé, non-admin bloqué)
+- [ ] Passage simplifier sur les nouveaux modules
+- [ ] Vérifs mobile 375 / 768 / desktop
+
+---
+
 ## J7 — Doc finale + roadmap extensions
 
 - [ ] README.md mis à jour (nouveau produit, plus seulement bénévoles)

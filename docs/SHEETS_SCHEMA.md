@@ -1,6 +1,6 @@
 # Schéma Google Sheets — base de données du club
 
-On crée un **nouveau Google Sheet dédié** (base club v2), distinct de celui utilisé par l'app bénévoles v1. Son ID ira dans `SHEET_ID` ([src/config.js](../src/config.js)). Il contient **5 onglets**. La 1re ligne de chaque onglet est l'en-tête.
+On crée un **nouveau Google Sheet dédié** (base club v2), distinct de celui utilisé par l'app bénévoles v1. Son ID ira dans `SHEET_ID` ([src/config.js](../src/config.js)). Il contient **7 onglets** (5 résultats + 2 sondages). La 1re ligne de chaque onglet est l'en-tête.
 
 > **Important** — Le Sheet doit être **partagé publiquement en lecture** (Fichier > Partager > "Tous ceux qui ont le lien"). L'écriture passe par un **Apps Script Web App** (voir [APPS_SCRIPT.md](APPS_SCRIPT.md)), pas par le partage direct.
 
@@ -119,10 +119,57 @@ Journal des imports.
 
 ---
 
+## Onglet 6 — `CoursesCiblees` (module sondages)
+
+Une ligne = une course ciblée par le bureau, ouverte à un sondage de participation.
+
+**Écriture : ADMIN_TOKEN requis** (voir [apps-script-web-app.gs](apps-script-web-app.gs)). Un token adhérent ne peut ni créer, ni modifier, ni supprimer.
+
+| Colonne | Type | Obligatoire | Exemple | Notes |
+|---|---|---|---|---|
+| `id` | string | oui | `cc_20251014_10km_pl` | Identifiant stable. |
+| `nom` | string | oui | `10 km de Pérenchies` | |
+| `date` | `YYYY-MM-DD` | oui | `2025-10-14` | |
+| `lieu` | string | non | `Pérenchies (59)` | |
+| `distances` | string | non | `10 km` / `10 km, semi` | Libre, séparées par virgule. |
+| `url_officielle` | url | non | | |
+| `url_inscription` | url | non | | |
+| `description` | string | non | | Commentaire libre du bureau. |
+| `statut` | enum | oui | `brouillon` / `publiee` / `cloturee` / `archivee` | Seul `publiee` est visible côté adhérent. |
+| `date_limite_reponse` | `YYYY-MM-DD` | non | `2025-10-10` | Au-delà, le formulaire est bloqué côté UI. |
+| `afficher_participants` | `oui`/`non` | oui | `oui` | Si `non`, l'adhérent voit seulement des compteurs, pas les noms. |
+| `autoriser_modif_reponse` | `oui`/`non` | oui | `oui` | Si `non`, pas de upsert côté adhérent. |
+| `created_at` | ISO datetime | oui | auto | |
+| `updated_at` | ISO datetime | oui | auto | |
+
+---
+
+## Onglet 7 — `ReponsesSondage` (module sondages)
+
+Une ligne = une réponse d'un adhérent à une course ciblée.
+
+**Écriture : SHARED_TOKEN suffit** (append + upsert sur `id`). Lecture libre.
+
+| Colonne | Type | Obligatoire | Exemple | Notes |
+|---|---|---|---|---|
+| `id` | string | oui | `rep_cc_20251014_adh_0042` | Clé stable = `course_ciblee_id + '_' + adherent_id` (ou hash prénom+nom si non adhérent). Permet upsert si modif autorisée. |
+| `course_ciblee_id` | string | oui | FK `CoursesCiblees.id` | |
+| `adherent_id` | string | non | FK `Adherents.id` | Vide si réponse non identifiée. |
+| `prenom` | string | oui | | Copié depuis `Adherents` au moment de la réponse. |
+| `nom` | string | oui | | |
+| `reponse` | enum | oui | `oui` / `non` / `peut_etre` | **MVP : strictement ces 3 valeurs.** |
+| `distance_choisie` | string | non | `10 km` | Rempli uniquement si la course a ≥ 2 distances et que `reponse=oui`. Valeur prise dans `CoursesCiblees.distances` split par virgule. |
+| `created_at` | ISO datetime | oui | auto | |
+| `updated_at` | ISO datetime | oui | auto | Mis à jour lors d'un upsert. |
+
+**Dédup** : clé `id` reposant sur `course_ciblee_id + adherent_id`. Un adhérent qui répond deux fois écrase sa réponse précédente (si `autoriser_modif_reponse = oui`).
+
+---
+
 ## Checklist de mise en place (utilisateur)
 
 1. [ ] Créer un **nouveau** Google Sheet vide (titre suggéré : `Ch'tis Marathoniens — Base Club`).
-2. [ ] Créer 5 onglets : `Adherents`, `Courses`, `Resultats`, `Matching_Overrides`, `Imports` avec les en-têtes exacts des §1-5.
+2. [ ] Créer 7 onglets : `Adherents`, `Courses`, `Resultats`, `Matching_Overrides`, `Imports`, `CoursesCiblees`, `ReponsesSondage` avec les en-têtes exacts des §1-7.
 3. [ ] Copier-coller depuis l'ancien Sheet les adhérents existants dans le nouvel onglet `Adherents` (colonnes `prenom`, `nom`, `role`, `actif` — les autres colonnes restent vides et seront remplies progressivement).
 4. [ ] Partager le Sheet en lecture publique (Fichier → Partager → "Tout le monde avec le lien").
 5. [ ] Suivre [APPS_SCRIPT.md](APPS_SCRIPT.md) pour déployer le Web App d'écriture.

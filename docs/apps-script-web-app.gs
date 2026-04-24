@@ -14,7 +14,9 @@ const ALLOWED_SHEETS = [
   'Courses',
   'Resultats',
   'Matching_Overrides',
-  'Imports'
+  'Imports',
+  'CoursesCiblees',
+  'ReponsesSondage'
 ];
 
 /** Point d'entrée POST — toute l'app tape ici. */

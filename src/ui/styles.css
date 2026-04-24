@@ -479,6 +479,242 @@ p { margin: 0 0 var(--sp-3) 0; }
 .progress-row:nth-child(10) .fill { animation-delay: 360ms; }
 
 /* =============================================================
+   Admin (courses ciblées) — layout, form, pills, actions
+   ============================================================= */
+
+.admin-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+.admin-topbar .btn { white-space: nowrap; }
+
+.admin-form { display: flex; flex-direction: column; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+.admin-section { padding: var(--sp-5); margin: 0; }
+.admin-section h2 {
+  margin-top: 0;
+  margin-bottom: var(--sp-4);
+  font-size: 16px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--c-choco);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+}
+.form-grid .field { margin: 0; }
+
+.admin-actions {
+  display: flex; flex-wrap: wrap; gap: var(--sp-3);
+  padding-top: var(--sp-2);
+}
+
+.btn-danger {
+  background: #f5d9d3; color: var(--c-err);
+  border-color: #e5b8ad;
+}
+.btn-danger:hover { background: #eec1b7; border-color: var(--c-err); color: var(--c-err); }
+.btn-danger:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Mini bouton supprimer dans les tables */
+.btn-del {
+  padding: 4px 9px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--c-ink-40);
+  border-color: transparent;
+}
+.btn-del:hover { color: var(--c-err); background: #f5d9d3; border-color: #e5b8ad; }
+
+/* Tables admin — on hérite de .tbl, on renforce le ressenti */
+.tbl-admin th { background: var(--c-bg); position: sticky; top: 0; }
+.tbl-admin tr:hover td { background: #fff9e3; cursor: default; }
+.row-actions { display: inline-flex; gap: var(--sp-2); font-size: 13px; flex-wrap: wrap; }
+.row-actions a { white-space: nowrap; }
+
+/* Compteurs en pastilles dans la liste admin */
+.cnt-pills { display: inline-flex; gap: 4px; }
+.cnt-pills > span {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 24px; padding: 0 6px;
+  border-radius: 12px; font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Login admin — carte centrée, carrelée */
+.login-wrap {
+  max-width: 440px;
+  margin: var(--sp-6) auto;
+}
+.login-wrap .card { padding: var(--sp-6); }
+.login-form { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-3); }
+
+/* =============================================================
+   Module sondages (courses ciblées + réponses)
+   ============================================================= */
+
+.sondages-grid {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.sondage-card {
+  display: block;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: var(--sp-5);
+  color: var(--c-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--c-border);
+  box-shadow: var(--shadow-1);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.sondage-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+  border-color: var(--c-brown);
+}
+.sondage-card-top {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: var(--sp-2); margin-bottom: var(--sp-3);
+}
+.sondage-date {
+  font-size: 12px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--c-blue-700);
+}
+.sondage-nom {
+  margin: 0 0 var(--sp-1) 0;
+  font-size: 22px; line-height: 1.15;
+}
+.sondage-compteurs {
+  margin-top: var(--sp-4);
+  display: flex; flex-wrap: wrap; gap: var(--sp-2);
+  font-size: 13px; font-weight: 600;
+}
+.sondage-compteurs span {
+  padding: 3px 9px; border-radius: 3px;
+}
+.compteur-oui  { background: #e7f2db; color: var(--match-certain); }
+.compteur-peut { background: #fff59c; color: var(--c-choco); }
+.compteur-non  { background: #ecebe5; color: var(--c-ink-70); }
+
+/* Compteurs — vue détail (3 gros chiffres) */
+.sondage-totaux {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+  text-align: center;
+}
+.totaux-item { padding: var(--sp-3); border-radius: var(--r-sm); }
+.totaux-item .val {
+  font-family: var(--font-serif); font-variation-settings: 'SOFT' 50, 'opsz' 36;
+  font-size: 34px; font-weight: 500; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.totaux-item .lbl {
+  margin-top: 4px; font-size: 11px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--c-ink-40);
+}
+.totaux-oui  { background: #e7f2db; }
+.totaux-oui  .val { color: var(--match-certain); }
+.totaux-peut { background: #fff59c; }
+.totaux-peut .val { color: var(--c-choco); }
+.totaux-non  { background: #ecebe5; }
+.totaux-non  .val { color: var(--c-ink-70); }
+
+/* Formulaire de réponse */
+.sondage-form { display: flex; flex-direction: column; gap: var(--sp-4); }
+.sondage-form .field { margin: 0; }
+
+.reponse-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+.reponse-choices input[type="radio"] {
+  position: absolute; opacity: 0; pointer-events: none;
+}
+.reponse-choice {
+  display: block; text-align: center; cursor: pointer;
+  padding: 14px 10px;
+  border: 2px solid var(--c-border-2);
+  border-radius: var(--r);
+  font-weight: 600; font-size: 14px;
+  background: var(--c-surface); color: var(--c-ink);
+  transition: border-color .15s ease, background .15s ease, transform .08s ease;
+  user-select: none;
+}
+.reponse-choice:hover { border-color: var(--c-brown); }
+input[type="radio"]:checked + .choice-oui  { background: #e7f2db; border-color: var(--match-certain); color: var(--match-certain); }
+input[type="radio"]:checked + .choice-peut { background: #fff59c; border-color: var(--c-choco); color: var(--c-choco); }
+input[type="radio"]:checked + .choice-non  { background: #ecebe5; border-color: var(--c-ink-70); color: var(--c-ink-70); }
+input[type="radio"]:focus-visible + .reponse-choice {
+  outline: 2px solid var(--c-blue); outline-offset: 2px;
+}
+
+/* Choix de distance (quand plusieurs distances sont proposées) */
+.distance-choices {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2);
+}
+.distance-choices input[type="radio"] {
+  position: absolute; opacity: 0; pointer-events: none;
+}
+.distance-choice {
+  display: inline-block; cursor: pointer;
+  padding: 8px 14px;
+  border: 2px solid var(--c-border-2);
+  border-radius: 999px;
+  font-size: 14px; font-weight: 600;
+  background: var(--c-surface); color: var(--c-ink);
+  transition: border-color .15s ease, background .15s ease;
+}
+.distance-choice:hover { border-color: var(--c-brown); }
+input[type="radio"]:checked + .distance-choice {
+  background: var(--c-blue-50);
+  border-color: var(--c-blue);
+  color: var(--c-blue-700);
+}
+input[type="radio"]:focus-visible + .distance-choice {
+  outline: 2px solid var(--c-blue); outline-offset: 2px;
+}
+
+/* Participants (3 colonnes) */
+.participants-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+.participants-col h3 {
+  font-family: var(--font-sans);
+  font-size: 12px; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase;
+  margin-bottom: var(--sp-2);
+  padding-bottom: var(--sp-1);
+  border-bottom: 1px solid var(--c-border);
+}
+.participants-col ul { list-style: none; padding: 0; margin: 0; }
+.participants-col li {
+  padding: 5px 0;
+  font-size: 14px;
+  border-bottom: 1px dashed var(--c-border);
+}
+.participants-col li:last-child { border-bottom: 0; }
+.col-oui  h3 { color: var(--match-certain); }
+.col-peut h3 { color: var(--c-choco); }
+.col-non  h3 { color: var(--c-ink-70); }
+
+/* =============================================================
    Mobile
    ============================================================= */
 
@@ -491,4 +727,20 @@ p { margin: 0 0 var(--sp-3) 0; }
   .tbl { font-size: 13px; }
   .tbl th, .tbl td { padding: 8px 10px; }
   .hero-stat .value { font-size: 28px; }
+
+  /* Sondages mobile */
+  .sondages-grid { grid-template-columns: 1fr; }
+  .sondage-totaux { grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+  .totaux-item .val { font-size: 26px; }
+  .reponse-choices { grid-template-columns: 1fr; }
+  .reponse-choice { padding: 16px; font-size: 15px; }
+  .participants-cols { grid-template-columns: 1fr; gap: var(--sp-3); }
+
+  /* Admin mobile */
+  .admin-topbar { flex-direction: column; align-items: stretch; }
+  .admin-topbar .btn, .admin-topbar .btn-primary { width: 100%; justify-content: center; }
+  .form-grid { grid-template-columns: 1fr; }
+  .admin-section { padding: var(--sp-4); }
+  .row-actions { gap: 10px; }
+  .tbl-admin th, .tbl-admin td { padding: 8px 8px; }
 }
