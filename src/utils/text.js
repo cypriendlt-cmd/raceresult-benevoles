@@ -14,11 +14,9 @@ export function normaliser(str) {
   if (!str) return '';
   return String(str)
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    // Normalise tous les types de tirets Unicode (en-dash, em-dash, minus, nbhyphen…)
-    .replace(/[‐-―−]/g, '-')
-    // Normalise tous les types d'espaces (NBSP, narrow NBSP, em-space, etc.)
-    .replace(/[  -​  　]/g, ' ')
+    .replace(/[̀-ͯ]/g, '')                                  // diacritiques
+    .replace(/[‐‑‒–—―−]/g, '-')    // tirets Unicode
+    .replace(/[    ​ 　]/g, ' ')   // espaces Unicode
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ');

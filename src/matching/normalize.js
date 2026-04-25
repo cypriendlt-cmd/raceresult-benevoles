@@ -1,16 +1,44 @@
 /**
- * Helpers spécifiques matching (équivalence tokens, particules, homonymes,
- * compatibilité sexe). `normaliser` et `tokeniserNom` sont réexportés depuis
- * `utils/text.js` (source unique depuis J6, fusionné 2026-04-24).
+ * Normalisation noms / prénoms pour matching.
+ *
+ * Note : la fusion vers `utils/text.js` (J6 réduit) a été temporairement
+ * annulée 2026-04-25 après régression du matching côté dashboard et fiche
+ * adhérent. Les implémentations locales sont restaurées à l'identique
+ * de la version qui a passé les 13 cas matching.html. Voir lesson J6.5.
  */
-
-import { normaliser, tokeniserNom } from '../utils/text.js';
-export { normaliser, tokeniserNom };
 
 const PARTICULES = new Set([
   'de', 'du', 'des', 'le', 'la', "l'", 'van', 'von', 'der', 'den', 'da', 'do',
   'dos', 'di', 'al', 'el', 'ben', 'bin', 'ibn', 'mac', 'mc', "o'", 'st', 'st.'
 ]);
+
+/**
+ * Minuscule, sans accents, espaces normalisés.
+ * Les caractères Unicode sont écrits en escape \uXXXX pour éviter qu'un éditeur
+ * crée des plages involontaires entre eux (bug 2026-04-25 où une plage incluait
+ * les lettres ASCII et cassait le matching).
+ */
+export function normaliser(str) {
+  if (!str) return '';
+  return String(str)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')                                  // diacritiques
+    .replace(/[‐‑‒–—―−]/g, '-')    // tirets Unicode
+    .replace(/[    ​ 　]/g, ' ')   // espaces Unicode
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Tokenise sur tout ce qui n'est pas une lettre (espaces, tirets, apostrophes,
+ * points, etc.) pour être robuste aux variantes d'écriture.
+ */
+export function tokeniserNom(s) {
+  return normaliser(s)
+    .split(/[^a-z]+/)
+    .filter(Boolean);
+}
 
 /**
  * Deux prénoms/noms sont équivalents si :
