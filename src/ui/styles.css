@@ -152,6 +152,19 @@ p { margin: 0 0 var(--sp-3) 0; }
 }
 
 .nav { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
+
+.nav-toggle {
+  display: none;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-2);
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  font-size: 22px; line-height: 1;
+  color: var(--c-ink);
+  cursor: pointer;
+  margin-left: auto;
+}
+.nav-toggle:hover { background: var(--c-yellow-soft); border-color: var(--c-brown); }
 .nav a {
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-sm);
@@ -167,7 +180,7 @@ p { margin: 0 0 var(--sp-3) 0; }
   color: var(--c-yellow);
 }
 
-.app-main { padding: var(--sp-6); max-width: 1280px; width: 100%; margin: 0 auto; }
+.app-main { padding: var(--sp-6); max-width: 1280px; width: 100%; margin: 0 auto; min-width: 0; }
 
 .app-footer {
   border-top: 1px solid var(--c-border);
@@ -188,6 +201,7 @@ p { margin: 0 0 var(--sp-3) 0; }
   padding: var(--sp-5);
   margin-bottom: var(--sp-5);
   box-shadow: var(--shadow-1);
+  min-width: 0;  /* permet le rétrécissement quand parent grid/flex */
 }
 
 .card-feature {
@@ -221,6 +235,7 @@ p { margin: 0 0 var(--sp-3) 0; }
 }
 .field input, .field select, .field textarea {
   font: inherit; font-size: 15px;
+  width: 100%; max-width: 100%; min-width: 0;  /* évite débordement (filtres, formulaires) */
   padding: 10px 12px;
   border: 1px solid var(--c-border-2);
   border-radius: var(--r-sm);
@@ -269,6 +284,76 @@ p { margin: 0 0 var(--sp-3) 0; }
 /* =============================================================
    Tables
    ============================================================= */
+
+/* Wrapper pour tables qui peuvent déborder en mobile.
+   Permet un scroll horizontal LOCAL (à la table) sans faire scroller la page. */
+.tbl-wrap {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Indique visuellement qu'on peut scroller : ombre dégradée à droite,
+     attachée au scroll-container (disparaît quand on a tout fait défiler). */
+  background:
+    linear-gradient(90deg, var(--c-surface), transparent 8px) left center / 16px 100% no-repeat local,
+    linear-gradient(-90deg, var(--c-surface), transparent 8px) right center / 16px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(81,43,27,.18), transparent) left center / 14px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(81,43,27,.18), transparent) right center / 14px 100% no-repeat scroll;
+}
+/* Scrollbar visible iOS — Webkit ne l'affiche pas par défaut sur mobile.
+   On force une mince barre quand l'utilisateur survole / scroll. */
+.tbl-wrap::-webkit-scrollbar { height: 6px; }
+.tbl-wrap::-webkit-scrollbar-track { background: transparent; }
+.tbl-wrap::-webkit-scrollbar-thumb { background: var(--c-border-2); border-radius: 3px; }
+
+/* Tables empilables : sur mobile chaque ligne devient une carte avec
+   label/valeur via data-label sur les <td>. Bien plus lisible qu'un
+   scroll horizontal sur petite taille. */
+@media (max-width: 600px) {
+  .tbl-stack { display: block; min-width: 0; }
+  .tbl-stack thead { display: none; }
+  .tbl-stack tbody { display: block; }
+  .tbl-stack tr {
+    display: block;
+    padding: var(--sp-3) var(--sp-3) var(--sp-2);
+    border-bottom: 1px solid var(--c-border);
+    background: var(--c-surface);
+  }
+  .tbl-stack tr:last-child { border-bottom: 0; }
+  .tbl-stack tr:hover td { background: transparent; }
+  .tbl-stack td {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr);  /* minmax(0,1fr) → autorise le rétrécissement */
+    align-items: start;
+    gap: var(--sp-2);
+    padding: 5px 0;
+    border: 0;
+    font-size: 14px;
+    min-width: 0;
+  }
+  /* Empêche un enfant inline-flex (ex: badge) de stretcher la colonne valeur */
+  .tbl-stack td > * { min-width: 0; max-width: 100%; justify-self: start; }
+  .tbl-stack td .badge { white-space: normal; }
+  .tbl-stack td::before {
+    content: attr(data-label);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .05em; text-transform: uppercase;
+    color: var(--c-ink-40);
+    line-height: 1.6;
+  }
+  .tbl-stack td:empty { display: none; }
+  /* Cellule sans label (ex: bouton d'action) → pleine ligne, alignée à droite */
+  .tbl-stack td[data-label=""] {
+    grid-template-columns: 1fr;
+    justify-items: end;
+    padding-top: var(--sp-2);
+  }
+  .tbl-stack td[data-label=""]::before { display: none; }
+  /* Le wrapper scroll-x devient inutile en stack-mode */
+  .tbl-wrap { overflow-x: visible; }
+}
 
 .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tbl th, .tbl td {
@@ -637,6 +722,16 @@ p { margin: 0 0 var(--sp-3) 0; }
 .sondage-form { display: flex; flex-direction: column; gap: var(--sp-4); }
 .sondage-form .field { margin: 0; }
 
+.prefill-banner {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--c-blue-50);
+  border-left: 3px solid var(--c-blue);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--c-choco);
+}
+
 .reponse-choices {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -719,9 +814,31 @@ input[type="radio"]:focus-visible + .distance-choice {
    ============================================================= */
 
 @media (max-width: 780px) {
-  .app-header { flex-direction: column; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-3); }
-  .nav { width: 100%; overflow-x: auto; flex-wrap: nowrap; margin-left: 0; padding-bottom: 4px; }
-  .nav a { white-space: nowrap; }
+  .app-header {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+  }
+  .nav-toggle { display: inline-flex; align-items: center; }
+  /* Nav cachée par défaut, visible quand .open. Empile en colonne, pleine largeur. */
+  .nav {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    margin-left: 0;
+    overflow-x: visible;
+    flex-wrap: nowrap;
+    gap: 0;
+    border-top: 1px solid var(--c-border);
+    padding: var(--sp-2) 0 0;
+  }
+  .nav.open { display: flex; }
+  .nav a {
+    padding: 10px var(--sp-2);
+    border-radius: var(--r-sm);
+    white-space: normal;
+  }
   .app-main { padding: var(--sp-4); }
   .card { padding: var(--sp-4); border-radius: 8px; }
   .tbl { font-size: 13px; }
@@ -730,17 +847,48 @@ input[type="radio"]:focus-visible + .distance-choice {
 
   /* Sondages mobile */
   .sondages-grid { grid-template-columns: 1fr; }
-  .sondage-totaux { grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
-  .totaux-item .val { font-size: 26px; }
+  .sondage-totaux { grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); padding: var(--sp-3); }
+  .totaux-item { padding: var(--sp-2); }
+  .totaux-item .val { font-size: 24px; }
+  .totaux-item .lbl { font-size: 10px; }
+  .sondage-card { padding: var(--sp-4); }
+  .card-feature { padding: var(--sp-4); }
+  .card-feature::after { display: none; } /* la déco circle déborde sur petit écran */
   .reponse-choices { grid-template-columns: 1fr; }
   .reponse-choice { padding: 16px; font-size: 15px; }
   .participants-cols { grid-template-columns: 1fr; gap: var(--sp-3); }
 
   /* Admin mobile */
   .admin-topbar { flex-direction: column; align-items: stretch; }
-  .admin-topbar .btn, .admin-topbar .btn-primary { width: 100%; justify-content: center; }
+  .admin-topbar .btn, .admin-topbar .btn-primary {
+    width: 100%; justify-content: center;
+    white-space: normal;       /* le texte peut wrapper si trop long */
+    line-height: 1.3;
+    padding: 11px 14px;
+  }
   .form-grid { grid-template-columns: 1fr; }
   .admin-section { padding: var(--sp-4); }
-  .row-actions { gap: 10px; }
-  .tbl-admin th, .tbl-admin td { padding: 8px 8px; }
+  .row-actions { gap: 10px; font-size: 12px; }
+  .tbl-admin th, .tbl-admin td { padding: 8px 8px; font-size: 13px; }
+  .login-wrap { padding: 0 var(--sp-3); }
+  .login-wrap .card { padding: var(--sp-4); }
+  .hero-stats { grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+
+  /* Wrapper .tbl-wrap (utilisé par toutes les vues qui exposent une table) :
+     scroll horizontal LOCAL à la table, jamais à la page. */
+  .tbl-wrap > .tbl, .tbl-wrap > table.tbl { min-width: max-content; }
+
+  /* Filtres en pile : .row qui contient des .field passe en colonne sur mobile.
+     Sans :has() (pas universel), on force depuis l'ancêtre .card et tous les .field width:100%. */
+  .card > .row { flex-direction: column; align-items: stretch; gap: var(--sp-3); }
+  .card > .row > .field { width: 100%; }
+}
+
+/* Très petit écran (<= 360px) — densifier encore */
+@media (max-width: 360px) {
+  .app-main { padding: var(--sp-3); }
+  .card { padding: var(--sp-3); }
+  .totaux-item .val { font-size: 20px; }
+  .sondage-nom { font-size: 18px; }
+  h1 { font-size: 24px; }
 }

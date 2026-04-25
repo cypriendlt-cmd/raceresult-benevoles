@@ -121,7 +121,7 @@ function renderTable(list, coursesById, adherentsById) {
   const LIMIT = 500;
   const affichage = list.slice(0, LIMIT);
 
-  const table = el('table.tbl');
+  const table = el('table.tbl.tbl-stack');
   const mkTh = (label, col) => el('th', {
     style: 'cursor: pointer;',
     onclick: () => { if (state.triCol === col) state.triDesc = !state.triDesc; else { state.triCol = col; state.triDesc = true; } window.dispatchEvent(new HashChangeEvent('hashchange')); }
@@ -147,20 +147,20 @@ function renderTable(list, coursesById, adherentsById) {
       ? el('a', { href: '#/membre/' + adh.id }, `${adh.prenom} ${adh.nom}`)
       : el('span.muted', {}, `${r.prenom_source} ${r.nom_source}`);
     tbody.appendChild(el('tr', {}, [
-      el('td.mono', {}, (course && course.date) || ''),
-      el('td', {}, course
+      el('td.mono', { 'data-label': 'Date' }, (course && course.date) || ''),
+      el('td', { 'data-label': 'Course' }, course
         ? el('a', { href: '#/course/' + course.id }, course.nom || '—')
         : ''),
-      el('td.num', {}, course && course.distance_km ? course.distance_km + ' km' : ''),
-      el('td', {}, adhCell),
-      el('td.num', { title: r.temps && r.temps !== r.temps_net ? 'Brut : ' + r.temps : '' }, tempsAffiche(r)),
-      el('td.num', {}, String(r.rang_general || '')),
-      el('td', {}, r.categorie || ''),
-      el('td', {}, badge(r.match_status || 'absent')),
+      el('td.num', { 'data-label': 'Distance' }, course && course.distance_km ? course.distance_km + ' km' : ''),
+      el('td', { 'data-label': 'Adhérent' }, adhCell),
+      el('td.num', { 'data-label': 'Temps net', title: r.temps && r.temps !== r.temps_net ? 'Brut : ' + r.temps : '' }, tempsAffiche(r)),
+      el('td.num', { 'data-label': 'Rang' }, String(r.rang_general || '')),
+      el('td', { 'data-label': 'Catégorie' }, r.categorie || ''),
+      el('td', { 'data-label': 'Statut' }, badge(r.match_status || 'absent')),
     ]));
   });
   table.appendChild(tbody);
-  card.appendChild(table);
+  card.appendChild(el('div.tbl-wrap', {}, table));
   if (list.length > LIMIT) {
     card.appendChild(el('div.empty', {}, `Affichage limité aux ${LIMIT} premiers résultats sur ${list.length}. Affine les filtres.`));
   }

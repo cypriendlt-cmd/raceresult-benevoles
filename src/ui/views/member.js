@@ -113,7 +113,7 @@ function renderStats(mesResultats) {
   });
 
   // Meilleurs temps par distance
-  const tbl = el('table.tbl');
+  const tbl = el('table.tbl.tbl-stack');
   tbl.appendChild(el('thead', {}, el('tr', {}, [
     el('th', {}, 'Distance'),
     el('th', {}, 'Courses'),
@@ -125,14 +125,14 @@ function renderStats(mesResultats) {
     const avecTemps = entries.filter(e => tempsSec(e.r) != null);
     const meilleur = avecTemps.sort((a, b) => tempsSec(a.r) - tempsSec(b.r))[0];
     tbody.appendChild(el('tr', {}, [
-      el('td', {}, dist),
-      el('td.num', {}, String(entries.length)),
-      el('td.num', { title: 'Temps net' }, meilleur ? tempsAffiche(meilleur.r) : el('span.muted', {}, '—')),
-      el('td', {}, meilleur ? `${meilleur.course.nom || ''} (${(meilleur.course.date || '').slice(0, 7)})` : ''),
+      el('td', { 'data-label': 'Distance' }, dist),
+      el('td.num', { 'data-label': 'Courses' }, String(entries.length)),
+      el('td.num', { 'data-label': 'Meilleur temps', title: 'Temps net' }, meilleur ? tempsAffiche(meilleur.r) : el('span.muted', {}, '—')),
+      el('td', { 'data-label': 'Lors de' }, meilleur ? `${meilleur.course.nom || ''} (${(meilleur.course.date || '').slice(0, 7)})` : ''),
     ]));
   }
   tbl.appendChild(tbody);
-  card.appendChild(tbl);
+  card.appendChild(el('div.tbl-wrap', {}, tbl));
 
   // Régularité par année
   const annees = [...parAnnee.entries()].sort();
@@ -156,7 +156,7 @@ function renderHistorique(mesResultats) {
   card.appendChild(el('h2', {}, `Historique (${mesResultats.length})`));
   if (!mesResultats.length) return card;
 
-  const tbl = el('table.tbl');
+  const tbl = el('table.tbl.tbl-stack');
   tbl.appendChild(el('thead', {}, el('tr', {}, [
     el('th', {}, 'Date'),
     el('th', {}, 'Course'),
@@ -168,15 +168,15 @@ function renderHistorique(mesResultats) {
   const tbody = el('tbody');
   mesResultats.forEach(({ r, course }) => {
     tbody.appendChild(el('tr', {}, [
-      el('td.mono', {}, course.date || ''),
-      el('td', {}, course.nom || ''),
-      el('td.num', {}, course.distance_km ? course.distance_km + ' km' : ''),
-      el('td.num', { title: r.temps && r.temps !== r.temps_net ? 'Brut : ' + r.temps : '' }, tempsAffiche(r)),
-      el('td.num', {}, String(r.rang_general || '')),
-      el('td', {}, r.categorie || ''),
+      el('td.mono', { 'data-label': 'Date' }, course.date || ''),
+      el('td', { 'data-label': 'Course' }, course.nom || ''),
+      el('td.num', { 'data-label': 'Distance' }, course.distance_km ? course.distance_km + ' km' : ''),
+      el('td.num', { 'data-label': 'Temps net', title: r.temps && r.temps !== r.temps_net ? 'Brut : ' + r.temps : '' }, tempsAffiche(r)),
+      el('td.num', { 'data-label': 'Rang' }, String(r.rang_general || '')),
+      el('td', { 'data-label': 'Catégorie' }, r.categorie || ''),
     ]));
   });
   tbl.appendChild(tbody);
-  card.appendChild(tbl);
+  card.appendChild(el('div.tbl-wrap', {}, tbl));
   return card;
 }

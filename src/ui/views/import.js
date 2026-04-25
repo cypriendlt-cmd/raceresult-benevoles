@@ -282,11 +282,11 @@ function renderTable(bundle, idx) {
 
   if (tronque) {
     const wrap = el('div');
-    wrap.appendChild(table);
+    wrap.appendChild(el('div.tbl-wrap', {}, table));
     wrap.appendChild(el('div.empty', {}, `Affichage limité aux ${LIMIT} premières lignes sur ${filtre.length}. Bascule sur "Adhérents reconnus" pour voir tes membres en priorité.`));
     return wrap;
   }
-  return table;
+  return el('div.tbl-wrap', {}, table);
 }
 
 async function validerImport(idx, { remplacer = false } = {}) {

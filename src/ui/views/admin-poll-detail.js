@@ -3,6 +3,7 @@
 import { el, spinner, alert } from '../components/helpers.js';
 import { isAdmin } from '../../auth/session.js';
 import { getCourseCiblee, listReponsesPourCourse, compterReponses, deleteReponse } from '../../store/sondages.js';
+import { formatDate } from '../../utils/date.js';
 
 export default async function renderAdminPollDetail(root, params) {
   if (!isAdmin()) { location.hash = '#/admin'; return; }
@@ -48,8 +49,9 @@ async function render(root, id) {
     const feedback = el('div.form-feedback');
     root.appendChild(feedback);
 
-    const card = el('div.card', { style: 'padding:0; overflow:hidden' });
-    const tbl = el('table.tbl.tbl-admin');
+    const card = el('div.card', { style: 'padding:0' });
+    const wrap = el('div.tbl-wrap');
+    const tbl = el('table.tbl.tbl-admin.tbl-stack');
     tbl.appendChild(el('thead', {}, el('tr', {}, [
       el('th', {}, 'Nom'),
       el('th', {}, 'Prénom'),
@@ -78,16 +80,17 @@ async function render(root, id) {
           }
         });
         tbody.appendChild(el('tr', {}, [
-          el('td', { style: 'font-weight:600' }, r.nom || ''),
-          el('td', {}, r.prenom || ''),
-          el('td', {}, badgeReponse(r.reponse)),
-          el('td', {}, r.distance_choisie || (r.reponse === 'oui' ? el('span.muted', {}, '—') : '')),
-          el('td.mono', {}, (r.updated_at || r.created_at || '').slice(0, 16).replace('T', ' ')),
-          el('td', { style: 'text-align:right' }, btn),
+          el('td', { 'data-label': 'Nom', style: 'font-weight:600' }, r.nom || ''),
+          el('td', { 'data-label': 'Prénom' }, r.prenom || ''),
+          el('td', { 'data-label': 'Réponse' }, badgeReponse(r.reponse)),
+          el('td', { 'data-label': 'Distance' }, r.distance_choisie || (r.reponse === 'oui' ? el('span.muted', {}, '—') : '')),
+          el('td.mono', { 'data-label': 'Mise à jour' }, (r.updated_at || r.created_at || '').slice(0, 16).replace('T', ' ')),
+          el('td', { 'data-label': '', style: 'text-align:right' }, btn),
         ]));
       });
     tbl.appendChild(tbody);
-    card.appendChild(tbl);
+    wrap.appendChild(tbl);
+    card.appendChild(wrap);
     root.appendChild(card);
   } catch (err) {
     loader.remove();
@@ -102,9 +105,3 @@ function badgeReponse(r) {
   return el('span.muted', {}, r || '');
 }
 
-function formatDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-}

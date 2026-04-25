@@ -3,6 +3,7 @@
 import { el, spinner, alert, badge } from '../components/helpers.js';
 import { isAdmin } from '../../auth/session.js';
 import { listCoursesCiblees, listReponses, compterReponses } from '../../store/sondages.js';
+import { formatDate } from '../../utils/date.js';
 
 const STATUT_BADGES = {
   brouillon: 'absent',   // gris
@@ -43,8 +44,9 @@ export default async function renderAdminCoursesList(root) {
       return;
     }
 
-    const card = el('div.card', { style: 'padding:0; overflow:hidden' });
-    const tbl = el('table.tbl.tbl-admin');
+    const card = el('div.card', { style: 'padding:0' });
+    const wrap = el('div.tbl-wrap');
+    const tbl = el('table.tbl.tbl-admin.tbl-stack');
     tbl.appendChild(el('thead', {}, el('tr', {}, [
       el('th', {}, 'Course'),
       el('th', {}, 'Date'),
@@ -59,14 +61,14 @@ export default async function renderAdminCoursesList(root) {
         const rep = reponses.filter(r => r.course_ciblee_id === c.id);
         const cnt = compterReponses(rep);
         tbody.appendChild(el('tr', {}, [
-          el('td', {}, [
+          el('td', { 'data-label': 'Course' }, [
             el('div', { style: 'font-weight:600' }, c.nom || '(sans nom)'),
             c.lieu ? el('div.muted', { style: 'font-size:12px' }, c.lieu) : null,
           ]),
-          el('td', {}, formatDate(c.date)),
-          el('td', {}, badgeStatut(c.statut)),
-          el('td.num', {}, cntBadge(cnt)),
-          el('td', {}, el('div.row-actions', {}, [
+          el('td', { 'data-label': 'Date' }, formatDate(c.date, 'short')),
+          el('td', { 'data-label': 'Statut' }, badgeStatut(c.statut)),
+          el('td.num', { 'data-label': 'Réponses' }, cntBadge(cnt)),
+          el('td', { 'data-label': 'Actions' }, el('div.row-actions', {}, [
             el('a', { href: '#/admin/courses/' + encodeURIComponent(c.id) }, 'Modifier'),
             el('a', { href: '#/admin/sondage/' + encodeURIComponent(c.id) }, 'Réponses'),
             el('a', { href: '#/sondages/' + encodeURIComponent(c.id) }, 'Voir'),
@@ -74,7 +76,8 @@ export default async function renderAdminCoursesList(root) {
         ]));
       });
     tbl.appendChild(tbody);
-    card.appendChild(tbl);
+    wrap.appendChild(tbl);
+    card.appendChild(wrap);
     root.appendChild(card);
   } catch (err) {
     loader.remove();
@@ -96,9 +99,3 @@ function cntBadge(c) {
   ]);
 }
 
-function formatDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-}

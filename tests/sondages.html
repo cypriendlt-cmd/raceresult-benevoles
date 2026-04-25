@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Tests module sondages</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: .2em; }
+    h2 { margin-top: 2rem; border-bottom: 1px solid #ccc; padding-bottom: .3em; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+    th, td { border: 1px solid #ccc; padding: .4rem .6rem; text-align: left; font-size: 14px; vertical-align: top; }
+    th { background: #f4f4f4; }
+    .ok { color: green; font-weight: bold; }
+    .ko { color: red; font-weight: bold; }
+    .run-btn { padding: 6px 12px; cursor: pointer; font-size: 14px; margin-right: 8px; }
+    .hint { color: #666; font-size: 13px; }
+    code { background: #f4f4f4; padding: 0 4px; border-radius: 3px; }
+    .checklist li { margin: 6px 0; }
+    .pass-all { padding: 8px 12px; background: #e7f2db; border-left: 3px solid green; margin-top: 1em; }
+    .fail-some { padding: 8px 12px; background: #f5d9d3; border-left: 3px solid red; margin-top: 1em; }
+  </style>
+</head>
+<body>
+  <h1>Tests module sondages</h1>
+  <p class="hint">
+    Les tests unitaires se lancent au chargement de la page.
+    Les tests d'intégration touchent la Sheet réelle — lance-les un à un, ils nettoient après eux (création puis suppression d'une course <code>cc_test_*</code>).
+  </p>
+
+  <h2>1. Tests unitaires (hors réseau)</h2>
+  <table id="unit-out">
+    <thead><tr><th>#</th><th>Cas</th><th>Attendu</th><th>Obtenu</th><th>OK ?</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="unit-summary"></div>
+
+  <h2>2. Tests d'intégration (touchent la Sheet)</h2>
+  <p class="hint">Chaque bouton crée une donnée temporaire, vérifie, puis supprime. Vérifie dans la Sheet que rien ne reste après.</p>
+  <div>
+    <button class="run-btn" id="btn-cycle">Cycle course : create → get → update → delete</button>
+    <button class="run-btn" id="btn-reponse">Cycle réponse : saveReponse upsert → delete</button>
+    <button class="run-btn" id="btn-all">Tout enchaîner</button>
+  </div>
+  <table id="int-out">
+    <thead><tr><th>#</th><th>Cas</th><th>Résultat</th><th>OK ?</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>3. Checklist manuelle (vues)</h2>
+  <p class="hint">Ces cas dépendent du rendu DOM, à vérifier visuellement dans l'app.</p>
+  <ul class="checklist">
+    <li><input type="checkbox"> Adhérent : <code>#/sondages</code> liste uniquement les courses dont <code>statut = publiee</code></li>
+    <li><input type="checkbox"> Adhérent : date limite dépassée → bandeau jaune, formulaire retiré</li>
+    <li><input type="checkbox"> Adhérent : <code>statut = cloturee</code> → bandeau, formulaire retiré</li>
+    <li><input type="checkbox"> Adhérent : <code>afficher_participants = non</code> → pas de bloc "Qui a répondu"</li>
+    <li><input type="checkbox"> Adhérent : <code>autoriser_modif_reponse = non</code> + déjà répondu → submit bloqué avec message</li>
+    <li><input type="checkbox"> Adhérent : course avec ≥ 2 distances → sélecteur visible seulement si "oui", obligatoire</li>
+    <li><input type="checkbox"> Adhérent : course avec 1 seule distance → pas de sélecteur, distance auto-affectée</li>
+    <li><input type="checkbox"> Adhérent : préremplissage — taper son nom pré-coche la réponse précédente + bandeau "Tu as déjà répondu"</li>
+    <li><input type="checkbox"> Adhérent : autocomplete — taper "Jea" propose les adhérents matchants</li>
+    <li><input type="checkbox"> Non-admin : <code>#/admin/courses</code> → redirigé vers <code>#/sondages</code></li>
+    <li><input type="checkbox"> Non-admin : nav — seuls "Sondages" et "Admin" visibles</li>
+    <li><input type="checkbox"> Admin : <code>#/admin/courses</code> → liste avec badges statut, compteurs pills, actions</li>
+    <li><input type="checkbox"> Admin : détail sondage → bouton <code>✕</code> supprime une réponse individuelle</li>
+    <li><input type="checkbox"> Mobile (devtools 375px) : radios pleine largeur, compteurs pas écrasés</li>
+  </ul>
+
+  <script type="module">
+    import {
+      parseDistances, compterReponses, courseCibleeId, reponseId,
+      saveCourseCiblee, getCourseCiblee, deleteCourseCiblee,
+      saveReponse, listReponsesPourCourse, deleteReponse,
+    } from '../src/store/sondages.js';
+
+    // -------------------- UNITAIRES --------------------
+    const unitCases = [];
+
+    function uCase(label, actual, expected) {
+      const pass = JSON.stringify(actual) === JSON.stringify(expected);
+      unitCases.push({ label, actual, expected, pass });
+    }
+
+    // parseDistances
+    uCase('parseDistances("")', parseDistances(''), []);
+    uCase('parseDistances(null)', parseDistances(null), []);
+    uCase('parseDistances("10 km")', parseDistances('10 km'), ['10 km']);
+    uCase('parseDistances("10 km, semi, marathon")',
+      parseDistances('10 km, semi, marathon'), ['10 km', 'semi', 'marathon']);
+    uCase('parseDistances avec point-virgule et espaces',
+      parseDistances(' 10 km ; semi ; '), ['10 km', 'semi']);
+
+    // compterReponses
+    uCase('compterReponses([])', compterReponses([]), { oui: 0, non: 0, peut_etre: 0, total: 0 });
+    uCase('compterReponses mix',
+      compterReponses([
+        { reponse: 'oui' }, { reponse: 'oui' }, { reponse: 'non' },
+        { reponse: 'peut_etre' }, { reponse: 'autre' }
+      ]),
+      { oui: 2, non: 1, peut_etre: 1, total: 4 });
+
+    // courseCibleeId stable
+    const idA = courseCibleeId({ date: '2025-10-14', nom: '10 km de Pérenchies' });
+    const idB = courseCibleeId({ date: '2025-10-14', nom: '10 km de Pérenchies' });
+    uCase('courseCibleeId stable (même entrée → même sortie)', idA, idB);
+
+    // reponseId : différent avec / sans adherent_id
+    const rA = reponseId({ course_ciblee_id: 'cc_x', adherent_id: 'adh_1', prenom: 'Jean', nom: 'Dupont' });
+    const rB = reponseId({ course_ciblee_id: 'cc_x', adherent_id: '',       prenom: 'Jean', nom: 'Dupont' });
+    uCase('reponseId diffère avec vs sans adherent_id', rA !== rB, true);
+
+    // Render unit
+    const uBody = document.querySelector('#unit-out tbody');
+    let uPass = 0;
+    unitCases.forEach((c, i) => {
+      if (c.pass) uPass++;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${c.label}</td>
+        <td><code>${escapeHtml(JSON.stringify(c.expected))}</code></td>
+        <td><code>${escapeHtml(JSON.stringify(c.actual))}</code></td>
+        <td class="${c.pass ? 'ok' : 'ko'}">${c.pass ? '✅' : '❌'}</td>
+      `;
+      uBody.appendChild(tr);
+    });
+    const summary = document.querySelector('#unit-summary');
+    summary.className = uPass === unitCases.length ? 'pass-all' : 'fail-some';
+    summary.textContent = `Unitaires : ${uPass}/${unitCases.length} OK`;
+
+    // -------------------- INTÉGRATION --------------------
+    const intBody = document.querySelector('#int-out tbody');
+    let intCounter = 0;
+    function iLog(label, ok, detail) {
+      intCounter++;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${intCounter}</td>
+        <td>${label}</td>
+        <td><code>${escapeHtml(detail || '')}</code></td>
+        <td class="${ok ? 'ok' : 'ko'}">${ok ? '✅' : '❌'}</td>
+      `;
+      intBody.appendChild(tr);
+    }
+
+    function rnd() { return Math.random().toString(36).slice(2, 8); }
+
+    async function cycleCourse() {
+      const marker = 'cc_test_' + rnd();
+      try {
+        // 1. Create
+        const { course: created } = await saveCourseCiblee({
+          id: marker, nom: 'TEST ' + marker, date: '2099-01-01',
+          distances: '10 km, semi', statut: 'brouillon'
+        });
+        iLog('saveCourseCiblee (create)', created.id === marker, 'id=' + created.id);
+
+        // 2. Get
+        const fetched = await getCourseCiblee(marker);
+        iLog('getCourseCiblee → retrouve', !!fetched && fetched.nom.startsWith('TEST '), 'nom=' + (fetched && fetched.nom));
+
+        // 3. Update (upsert sur même id)
+        await saveCourseCiblee({ ...fetched, statut: 'publiee' });
+        const updated = await getCourseCiblee(marker);
+        iLog('saveCourseCiblee (update statut)', updated.statut === 'publiee', 'statut=' + updated.statut);
+
+        // 4. Delete
+        await deleteCourseCiblee(marker);
+        const gone = await getCourseCiblee(marker);
+        iLog('deleteCourseCiblee', gone === null, 'après delete = ' + gone);
+      } catch (err) {
+        iLog('cycleCourse', false, 'ERREUR : ' + err.message);
+        try { await deleteCourseCiblee(marker); } catch {}
+      }
+    }
+
+    async function cycleReponse() {
+      const marker = 'cc_test_' + rnd();
+      try {
+        await saveCourseCiblee({
+          id: marker, nom: 'TEST ' + marker, date: '2099-01-01',
+          distances: '10 km', statut: 'publiee'
+        });
+
+        // 1er save
+        await saveReponse({ course_ciblee_id: marker, prenom: 'Test', nom: 'User' + rnd(), reponse: 'oui' });
+        let reps = await listReponsesPourCourse(marker);
+        iLog('saveReponse (append)', reps.length === 1, 'count=' + reps.length);
+
+        // 2e save même identité → upsert, pas doublon
+        const prenom = reps[0].prenom, nom = reps[0].nom;
+        await saveReponse({ course_ciblee_id: marker, prenom, nom, reponse: 'non' });
+        reps = await listReponsesPourCourse(marker);
+        iLog('saveReponse (upsert, pas de doublon)', reps.length === 1 && reps[0].reponse === 'non',
+             'count=' + reps.length + ', reponse=' + reps[0].reponse);
+
+        // Delete réponse
+        await deleteReponse(reps[0].id);
+        reps = await listReponsesPourCourse(marker);
+        iLog('deleteReponse', reps.length === 0, 'count=' + reps.length);
+
+        // Cleanup course
+        await deleteCourseCiblee(marker);
+      } catch (err) {
+        iLog('cycleReponse', false, 'ERREUR : ' + err.message);
+        try { await deleteCourseCiblee(marker); } catch {}
+      }
+    }
+
+    document.getElementById('btn-cycle').addEventListener('click', cycleCourse);
+    document.getElementById('btn-reponse').addEventListener('click', cycleReponse);
+    document.getElementById('btn-all').addEventListener('click', async () => {
+      await cycleCourse();
+      await cycleReponse();
+    });
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>

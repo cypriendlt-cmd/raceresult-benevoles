@@ -2,6 +2,7 @@
 
 import { el, badge, alert as uiAlert, spinner, escape } from '../components/helpers.js';
 import { read, deleteImport } from '../../store/index.js';
+import { formatDate } from '../../utils/date.js';
 
 export default async function renderImportsHistory(root) {
   root.appendChild(el('h1', {}, 'Historique des imports'));
@@ -21,7 +22,7 @@ export default async function renderImportsHistory(root) {
     // Tri desc par date
     const sorted = imports.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-    const table = el('table.tbl');
+    const table = el('table.tbl.tbl-stack');
     table.appendChild(el('thead', {}, el('tr', {}, [
       el('th', {}, 'Date'),
       el('th', {}, 'Course'),
@@ -37,24 +38,24 @@ export default async function renderImportsHistory(root) {
     sorted.forEach(imp => {
       const course = coursesById.get(imp.course_id);
       const tr = el('tr');
-      tr.appendChild(el('td.mono', {}, formatDate(imp.date)));
-      tr.appendChild(el('td', {}, course
+      tr.appendChild(el('td.mono', { 'data-label': 'Date' }, formatDate(imp.date, 'datetime')));
+      tr.appendChild(el('td', { 'data-label': 'Course' }, course
         ? el('a', { href: '#/course/' + course.id }, course.nom || '—')
         : el('span.muted', {}, imp.course_id || '—')));
-      tr.appendChild(el('td', {}, el('span.muted', {}, imp.source || '')));
-      tr.appendChild(el('td.num', {}, String(imp.lignes_importees || 0)));
-      tr.appendChild(el('td.num', {}, String(imp.lignes_ignorees || 0)));
-      tr.appendChild(el('td.num', {}, String(imp.lignes_douteuses || 0)));
-      tr.appendChild(el('td', {}, badge(imp.status === 'success' ? 'certain' : imp.status === 'partial' ? 'ambigu' : 'absent')));
-      tr.appendChild(el('td', {}, el('span.muted', {}, imp.user || '—')));
+      tr.appendChild(el('td', { 'data-label': 'Source' }, el('span.muted', {}, imp.source || '')));
+      tr.appendChild(el('td.num', { 'data-label': 'Importées' }, String(imp.lignes_importees || 0)));
+      tr.appendChild(el('td.num', { 'data-label': 'Ignorées' }, String(imp.lignes_ignorees || 0)));
+      tr.appendChild(el('td.num', { 'data-label': 'À valider' }, String(imp.lignes_douteuses || 0)));
+      tr.appendChild(el('td', { 'data-label': 'Statut' }, badge(imp.status === 'success' ? 'certain' : imp.status === 'partial' ? 'ambigu' : 'absent')));
+      tr.appendChild(el('td', { 'data-label': 'Par' }, el('span.muted', {}, imp.user || '—')));
       const btn = el('button.btn', {
         onclick: () => confirmerSuppression(imp, course, tr, btn)
       }, 'Supprimer');
-      tr.appendChild(el('td', {}, btn));
+      tr.appendChild(el('td', { 'data-label': '' }, btn));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
-    card.appendChild(table);
+    card.appendChild(el('div.tbl-wrap', {}, table));
   } catch (e) {
     card.replaceChildren(uiAlert('err', 'Erreur chargement : ' + (e.message || String(e))));
   }
@@ -81,10 +82,3 @@ async function confirmerSuppression(imp, course, tr, btn) {
   }
 }
 
-function formatDate(iso) {
-  if (!iso) return '';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
-  } catch { return iso; }
-}

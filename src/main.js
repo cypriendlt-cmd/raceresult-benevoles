@@ -92,6 +92,23 @@ function refreshNav() {
 window.addEventListener('hashchange', refreshNav);
 refreshNav();
 
+// Burger menu mobile : toggle .open sur la nav
+const navToggle = document.querySelector('.nav-toggle');
+const navEl = document.querySelector('.nav');
+if (navToggle && navEl) {
+  navToggle.addEventListener('click', () => {
+    const open = navEl.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', String(open));
+  });
+  // Ferme la nav après un clic sur un lien (sinon le menu reste ouvert sur mobile)
+  navEl.addEventListener('click', (ev) => {
+    if (ev.target.tagName === 'A') {
+      navEl.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
 window.__nav = navigate;
 
 /**

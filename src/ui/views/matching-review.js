@@ -3,6 +3,7 @@
 import { el, badge, alert as uiAlert, spinner, escape } from '../components/helpers.js';
 import { read, saveOverride, sendBatch, op, invalidateAll } from '../../store/index.js';
 import { SHEETS } from '../../config.js';
+import { normaliser } from '../../utils/text.js';
 
 export default async function renderMatchingReview(root) {
   root.appendChild(el('h1', {}, 'Correspondances à valider'));
@@ -48,11 +49,8 @@ function renderLigne(r, adherents, adherentsById, coursesById) {
   ]));
 
   // Candidats proposés (homonymes du nom)
-  const nomNorm = (r.nom_source || '').toLowerCase();
-  const candidats = adherents.filter(a =>
-    (a.nom || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') ===
-    nomNorm.normalize('NFD').replace(/[̀-ͯ]/g, '')
-  );
+  const nomCible = normaliser(r.nom_source);
+  const candidats = adherents.filter(a => normaliser(a.nom) === nomCible);
 
   const listeRow = el('div', { style: 'margin-top: 12px; display: grid; gap: 6px;' });
 

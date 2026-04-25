@@ -6,12 +6,19 @@
  * simplifier sans couvrir les fixtures.
  */
 
-/** Normalise un texte pour comparaison (sans accents, minuscule, espaces compacts). */
+/**
+ * Normalise un texte pour comparaison (sans accents, minuscule, espaces et tirets
+ * Unicode normalisés). Source unique utilisée par scraping, matching et UI.
+ */
 export function normaliser(str) {
   if (!str) return '';
   return String(str)
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
+    // Normalise tous les types de tirets Unicode (en-dash, em-dash, minus, nbhyphen…)
+    .replace(/[‐-―−]/g, '-')
+    // Normalise tous les types d'espaces (NBSP, narrow NBSP, em-space, etc.)
+    .replace(/[  -​  　]/g, ' ')
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ');
@@ -43,10 +50,13 @@ export function stripHTML(s) {
     .trim();
 }
 
-/** Tokenise un nom/prénom sur tirets et espaces (Jean-Marie -> [jean, marie]). */
+/**
+ * Tokenise un nom/prénom sur tout ce qui n'est pas une lettre (espaces, tirets,
+ * apostrophes, points, etc.) après normalisation. Robuste aux variantes d'écriture.
+ * Ex : "Jean-Marie O'Brien" → ["jean", "marie", "o", "brien"].
+ */
 export function tokeniserNom(s) {
-  if (!s) return [];
-  return String(s).split(/[-\s]+/).filter((t) => t.length > 0);
+  return normaliser(s).split(/[^a-z]+/).filter(Boolean);
 }
 
 /**

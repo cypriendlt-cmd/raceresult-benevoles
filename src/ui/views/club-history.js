@@ -86,7 +86,7 @@ export default async function renderClubHistory(root) {
       const section = el('div.card');
       section.appendChild(el('h2', {}, `${an} — ${cs.length} course${cs.length > 1 ? 's' : ''}`));
 
-      const tbl = el('table.tbl');
+      const tbl = el('table.tbl.tbl-stack');
       tbl.appendChild(el('thead', {}, el('tr', {}, [
         el('th', {}, 'Date'),
         el('th', {}, 'Course'),
@@ -102,18 +102,18 @@ export default async function renderClubHistory(root) {
             + (parts.length > 6 ? ` + ${parts.length - 6} autres` : '')
           : '';
         tbody.appendChild(el('tr', {}, [
-          el('td.mono', {}, c.date || ''),
-          el('td', {}, el('a', { href: '#/course/' + c.id }, c.nom || '—')),
-          el('td', {}, c.lieu || ''),
-          el('td.num', {}, c.distance_km ? c.distance_km + ' km' : ''),
-          el('td', {}, el('span', {}, [
+          el('td.mono', { 'data-label': 'Date' }, c.date || ''),
+          el('td', { 'data-label': 'Course' }, el('a', { href: '#/course/' + c.id }, c.nom || '—')),
+          el('td', { 'data-label': 'Lieu' }, c.lieu || ''),
+          el('td.num', { 'data-label': 'Distance' }, c.distance_km ? c.distance_km + ' km' : ''),
+          el('td', { 'data-label': 'Participants' }, el('span', {}, [
             el('strong', {}, String(parts.length)),
             parts.length ? el('span.muted', { style: 'margin-left: 8px;' }, partsLabel) : el('span.muted', { style: 'margin-left: 8px;' }, '—'),
           ])),
         ]));
       });
       tbl.appendChild(tbody);
-      section.appendChild(tbl);
+      section.appendChild(el('div.tbl-wrap', {}, tbl));
       zone.appendChild(section);
     }
   } catch (e) {

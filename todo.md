@@ -92,14 +92,18 @@
 - [x] Apps Script : actions `deleteMany` (liste d'IDs) + `deleteWhere` (filtre colonne=valeur)
 - [ ] ❗ **Utilisateur** : redéployer l'Apps Script (nouvelle version) pour activer `deleteMany`/`deleteWhere`
 
-## J6 — Tests + refactor
+## J6 — Refactor (réduit, 2026-04-25)
 
-- [ ] Couverture scraping sur fixtures
-- [ ] Couverture matching
-- [ ] Couverture dedup
-- [ ] Flux bout-en-bout : import → preview → validation → persist → consultation
-- [ ] Passage `code-simplifier` agent sur chaque module
-- [ ] Passage `fewer-permission-prompts` si pertinent
+Couverture tests existante (matching 13/13, sondages unitaires+intégration, scraping canary) considérée suffisante. J6 recentré sur dédup et simplifications.
+
+- [x] Fusion `normaliser` : version robuste (NBSP, tirets Unicode) promue dans `src/utils/text.js`, source unique
+- [x] Fusion `tokeniserNom` : version normalisée (`split(/[^a-z]+/)`) dans `src/utils/text.js`
+- [x] `src/matching/normalize.js` réexporte les 2 depuis `utils/text.js` (zéro casse upstream)
+- [x] `src/utils/date.js` : ajout `formatDate(iso, 'long'|'short'|'datetime')` + `isPast(iso)`
+- [x] Suppression des 5 copies locales de `formatDate` (sondages-list/detail, admin-courses-list, admin-poll-detail, imports-history)
+- [x] Suppression des 2 copies locales de `isPast`
+- [x] Suppression des `lc = s => ...NFD...` inline dans sondages-detail.js + matching-review.js → `normaliser` utilisé partout
+- [x] **Utilisateur** : tests passés (validation 2026-04-25)
 
 ## J8 — Module sondages / courses ciblées (en cours, 2026-04-24)
 
@@ -145,11 +149,35 @@ MVP strict : réponses = oui/non/peut_etre seulement. Pas de covoit, logement, c
 - [ ] `src/ui/views/admin-poll-detail.js` : résumé + tableau réponses (3 compteurs)
 
 ### Vague 5 — Tests + simplif
-- [ ] `tests/sondages.html` : 7 cas (admin crée, adhérent répond, adhérent modifie, afficher_participants=non, date_limite dépassée, sondage cloturé, non-admin bloqué)
+- [x] `tests/sondages.html` : unitaires (parseDistances, compterReponses, IDs stables), intégration (cycle CRUD course + cycle CRUD réponse avec cleanup), checklist manuelle (14 points)
 - [ ] Passage simplifier sur les nouveaux modules
 - [ ] Vérifs mobile 375 / 768 / desktop
 
+### Préremplissage (2026-04-24)
+- [x] Écoute `change` sur le champ identité dans sondages-detail.js
+- [x] `trouverDansReponses()` cherche par adherent_id d'abord, sinon par prénom+nom normalisés
+- [x] Pré-coche la réponse (dispatch `change` pour ré-afficher la distance le cas échéant)
+- [x] Pré-coche la `distance_choisie` si présente
+- [x] Bandeau bleu discret "Tu as déjà répondu le X — tu peux modifier ci-dessous"
+
 ---
+
+## J6.5 — Responsive mobile (2026-04-25)
+
+### Tables admin en mode cartes (stack) sur mobile
+- [x] Classe `.tbl-stack` : sur mobile (≤ 600px), thead masqué, chaque `<tr>` devient une carte, chaque `<td>` est un binôme label (depuis `data-label`) / valeur
+- [x] `admin-courses-list.js` : ajout `tbl-stack` + `data-label` sur chaque td (Course, Date, Statut, Réponses, Actions)
+- [x] `admin-poll-detail.js` : idem (Nom, Prénom, Réponse, Distance, Mise à jour, '' pour bouton supprimer)
+- [x] Cellule `data-label=""` : pleine ligne alignée à droite (pour le bouton ✕)
+
+### Responsive général
+
+- [x] Viewport `maximum-scale=1, user-scalable=no` sur `app.html` + `index.html` (anti-pattern accessibilité assumé)
+- [x] `body { overflow-x: hidden }` filet de sécurité contre tout débordement page
+- [x] Classe `.tbl-wrap` (overflow-x:auto) pour les tables admin → scroll horizontal LOCAL à la table, pas à la page
+- [x] Wrapper `.tbl-wrap` ajouté dans `admin-courses-list.js` + `admin-poll-detail.js` (remplace l'ancien `overflow:hidden` qui clippait)
+- [x] Mobile @780 : compteurs réduits, déco `card-feature::after` masquée, hero-stats en 2 colonnes
+- [x] Très petit @360 : densification supplémentaire (paddings, font-sizes)
 
 ## J7 — Doc finale + roadmap extensions
 

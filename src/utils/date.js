@@ -62,6 +62,34 @@ export function parseDate(input) {
   return null;
 }
 
+/**
+ * Formate une date ISO en français lisible.
+ * - style 'long'     : "14 octobre 2025"      (défaut)
+ * - style 'short'    : "14 oct. 2025"
+ * - style 'datetime' : "14/10/2025 09:42"
+ * Si la date est vide ou non parsable, retourne la valeur d'origine ou ''.
+ */
+export function formatDate(iso, style = 'long') {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  if (style === 'datetime') {
+    return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+  }
+  return d.toLocaleDateString('fr-FR',
+    style === 'short'
+      ? { day: '2-digit', month: 'short', year: 'numeric' }
+      : { day: 'numeric', month: 'long',  year: 'numeric' });
+}
+
+/** Vrai si la date ISO est strictement antérieure à maintenant (jour J inclus). */
+export function isPast(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (isNaN(d)) return false;
+  return d.setHours(23, 59, 59) < Date.now();
+}
+
 function toISO(y, mo, d) {
   if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
   if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;

@@ -5,6 +5,8 @@ import {
   getCourseCiblee, listReponsesPourCourse, compterReponses, saveReponse, parseDistances
 } from '../../store/sondages.js';
 import { read } from '../../store/index.js';
+import { formatDate, isPast } from '../../utils/date.js';
+import { normaliser } from '../../utils/text.js';
 
 export default async function renderSondagesDetail(root, params) {
   const id = decodeURIComponent(params[0] || '');
@@ -104,11 +106,40 @@ function renderFormulaire({ course, adherents, reponses, onSaved }) {
     autocomplete: 'off',
     placeholder: 'Ex : Jean Dupont',
   });
+  const banner = el('div.prefill-banner', { style: 'display:none' });
   form.appendChild(datalist);
   form.appendChild(el('div.field', {}, [
     el('label', {}, 'Ton nom (prénom puis nom)'),
     inputIdentite,
+    banner,
   ]));
+
+  // Préremplissage : quand l'utilisateur a fini de taper / choisi dans la datalist,
+  // on cherche une réponse existante et on pré-coche.
+  inputIdentite.addEventListener('change', () => {
+    const identite = inputIdentite.value.trim();
+    if (!identite) { banner.style.display = 'none'; return; }
+    const { prenom, nom, adherent_id } = resolveIdentite(identite, adherents);
+    const existing = trouverDansReponses(reponses, { prenom, nom, adherent_id });
+    if (!existing) { banner.style.display = 'none'; return; }
+
+    const radio = form.querySelector(`input[name="reponse"][value="${existing.reponse}"]`);
+    if (radio) {
+      radio.checked = true;
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (existing.distance_choisie) {
+      const drad = form.querySelector(
+        `input[name="distance_choisie"][value="${CSS.escape(existing.distance_choisie)}"]`
+      );
+      if (drad) drad.checked = true;
+    }
+    const when = (existing.updated_at || existing.created_at || '').slice(0, 10);
+    banner.textContent = when
+      ? `Tu as déjà répondu le ${formatDate(when)} — tu peux modifier ci-dessous.`
+      : 'Tu as déjà répondu — tu peux modifier ci-dessous.';
+    banner.style.display = '';
+  });
 
   // Radios segmented
   const radios = el('div.reponse-choices');
@@ -224,30 +255,23 @@ function renderParticipants(reponses) {
 }
 
 function resolveIdentite(identite, adherents) {
-  const lc = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-  const match = adherents.find(a => lc(`${a.prenom} ${a.nom}`) === lc(identite));
+  const cible = normaliser(identite);
+  const match = adherents.find(a => normaliser(`${a.prenom} ${a.nom}`) === cible);
   if (match) return { prenom: match.prenom, nom: match.nom, adherent_id: match.id };
-  const parts = identite.split(/\s+/);
+  const parts = identite.trim().split(/\s+/);
   return { prenom: parts[0] || '', nom: parts.slice(1).join(' ') || '', adherent_id: '' };
 }
 
-function aDejaRepondu(reponses, { prenom, nom, adherent_id }) {
-  const lc = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-  if (adherent_id) return reponses.some(r => r.adherent_id === adherent_id);
-  const pn = lc(prenom), nn = lc(nom);
-  return reponses.some(r => lc(r.prenom) === pn && lc(r.nom) === nn);
+function aDejaRepondu(reponses, identite) {
+  return !!trouverDansReponses(reponses, identite);
 }
 
-function formatDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+function trouverDansReponses(reponses, { prenom, nom, adherent_id }) {
+  if (adherent_id) {
+    const hit = reponses.find(r => r.adherent_id === adherent_id);
+    if (hit) return hit;
+  }
+  const pn = normaliser(prenom), nn = normaliser(nom);
+  return reponses.find(r => normaliser(r.prenom) === pn && normaliser(r.nom) === nn) || null;
 }
 
-function isPast(iso) {
-  if (!iso) return false;
-  const d = new Date(iso);
-  if (isNaN(d)) return false;
-  return d.setHours(23, 59, 59) < Date.now();
-}

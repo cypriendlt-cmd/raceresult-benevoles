@@ -2,6 +2,7 @@
 
 import { el, spinner, alert } from '../components/helpers.js';
 import { listCoursesPubliees, listReponses, compterReponses } from '../../store/sondages.js';
+import { formatDate, isPast } from '../../utils/date.js';
 
 export default async function renderSondagesList(root) {
   root.appendChild(el('div.card-feature.card', {}, [
@@ -59,16 +60,3 @@ export default async function renderSondagesList(root) {
   }
 }
 
-function formatDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function isPast(iso) {
-  if (!iso) return false;
-  const d = new Date(iso);
-  if (isNaN(d)) return false;
-  return d.setHours(23, 59, 59) < Date.now();
-}

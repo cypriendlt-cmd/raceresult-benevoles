@@ -157,7 +157,7 @@ function renderListe(resultats, adherentsById) {
     return card;
   }
 
-  const tbl = el('table.tbl');
+  const tbl = el('table.tbl.tbl-stack');
   tbl.appendChild(el('thead', {}, el('tr', {}, [
     el('th', {}, 'Rang'),
     el('th', {}, 'Adhérent / Coureur'),
@@ -173,14 +173,14 @@ function renderListe(resultats, adherentsById) {
       ? el('a', { href: '#/membre/' + adh.id }, `${adh.prenom} ${adh.nom}`)
       : el('span.muted', {}, `${r.prenom_source} ${r.nom_source}`);
     tbody.appendChild(el('tr', {}, [
-      el('td.num', {}, String(r.rang_general || '')),
-      el('td', {}, cell),
-      el('td.num', { title: r.temps && r.temps !== r.temps_net ? 'Brut : ' + r.temps : '' }, tempsAffiche(r)),
-      el('td', {}, r.categorie || ''),
-      el('td', {}, badge(adh ? 'certain' : (r.match_status || 'absent'))),
+      el('td.num', { 'data-label': 'Rang' }, String(r.rang_general || '')),
+      el('td', { 'data-label': 'Adhérent / Coureur' }, cell),
+      el('td.num', { 'data-label': 'Temps net', title: r.temps && r.temps !== r.temps_net ? 'Brut : ' + r.temps : '' }, tempsAffiche(r)),
+      el('td', { 'data-label': 'Catégorie' }, r.categorie || ''),
+      el('td', { 'data-label': 'Statut' }, badge(adh ? 'certain' : (r.match_status || 'absent'))),
     ]));
   });
   tbl.appendChild(tbody);
-  card.appendChild(tbl);
+  card.appendChild(el('div.tbl-wrap', {}, tbl));
   return card;
 }
