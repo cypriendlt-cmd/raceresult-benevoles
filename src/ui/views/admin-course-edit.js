@@ -94,8 +94,15 @@ export default async function renderAdminCourseEdit(root, params) {
     payload.afficher_participants = fd.get('afficher_participants');
     payload.autoriser_modif_reponse = fd.get('autoriser_modif_reponse');
     try {
-      const { course: saved } = await saveCourseCiblee(payload);
+      const { course: saved, distancesReinitialisees } = await saveCourseCiblee(payload, {
+        anciennesDistances: existante ? existante.distances : undefined,
+      });
       feedback.appendChild(alert('ok', 'Enregistré.'));
+      if (distancesReinitialisees > 0) {
+        feedback.appendChild(alert('warn',
+          `${distancesReinitialisees} réponse${distancesReinitialisees > 1 ? 's avaient' : ' avait'} une distance retirée. ` +
+          `Leur choix a été effacé — les adhérents devront re-choisir.`));
+      }
       if (!id) location.hash = '#/admin/courses/' + encodeURIComponent(saved.id);
     } catch (err) {
       feedback.appendChild(alert('err', err.message));

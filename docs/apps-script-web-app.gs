@@ -162,11 +162,57 @@ function opDeleteWhere(sheet, headers, column, value) {
   return { count: count };
 }
 
-/** Récupère les en-têtes (ligne 1). */
+/**
+ * Récupère les en-têtes (ligne 1) avec validation anti-corruption.
+ *
+ * Refuse toute opération si la ligne 1 a été corrompue (cellule trop longue,
+ * en-tête en double, ou cellule vide au milieu). Sans ça, toute écriture
+ * suivante empilerait des données dans une Sheet déjà cassée — beaucoup plus
+ * difficile à récupérer.
+ *
+ * Détecté lors d'un incident 2026-04-26 : la cellule A1 de ReponsesSondage
+ * contenait "id rep_xxx rep_yyy ..." (header + toutes les valeurs concaténées),
+ * cause inconnue mais probablement formule tapée à la main ou extension navigateur.
+ */
 function getHeaders(sheet) {
   const lastCol = sheet.getLastColumn();
   if (lastCol === 0) throw new Error('onglet vide: ' + sheet.getName());
-  return sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  const raw = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+
+  // Validation 1 : aucune cellule d'en-tête ne devrait être longue
+  // (un nom de colonne sain fait 5-30 caractères, jamais 80+).
+  for (let i = 0; i < raw.length; i++) {
+    const h = raw[i];
+    if (h.length > 80) {
+      throw new Error(
+        'en-tête corrompu colonne ' + (i + 1) + ' onglet "' + sheet.getName() +
+        '" (longueur ' + h.length + ' caractères). Vérifier la ligne 1 de la Sheet — ' +
+        'probable cellule contenant une formule TEXTJOIN ou un copier-coller foireux.'
+      );
+    }
+    if (h.indexOf('\n') !== -1) {
+      throw new Error(
+        'en-tête corrompu colonne ' + (i + 1) + ' onglet "' + sheet.getName() +
+        '" (saut de ligne dans la cellule). Vérifier la ligne 1 de la Sheet.'
+      );
+    }
+  }
+
+  // Validation 2 : pas d'en-têtes en double (sinon row[h] perdra des valeurs)
+  const seen = {};
+  for (let i = 0; i < raw.length; i++) {
+    const h = raw[i].trim();
+    if (h === '') continue;  // colonne vide en queue tolérée, mais pas au milieu
+    if (seen[h]) {
+      throw new Error(
+        'en-tête en double "' + h + '" onglet "' + sheet.getName() +
+        '" (colonnes ' + seen[h] + ' et ' + (i + 1) + '). Renommer ou supprimer.'
+      );
+    }
+    seen[h] = i + 1;
+  }
+
+  return raw;
 }
 
 /** Construit le tableau aligné sur les en-têtes. */

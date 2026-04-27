@@ -88,11 +88,26 @@ export function compterReponses(reponses) {
 // ============================================================
 
 /**
+ * Parse une chaîne de distances ("10 km, semi, marathon") en tableau ["10 km", "semi", "marathon"].
+ * Sépare sur virgules ou points-virgules, trim, ignore les vides.
+ */
+export function parseDistances(s) {
+  if (!s) return [];
+  return String(s).split(/[,;]/).map(d => d.trim()).filter(Boolean);
+}
+
+/**
  * Upsert d'une course ciblée.
  * Si pas d'id, génère un courseCibleeId stable.
  * Remplit created_at / updated_at.
+ *
+ * Si `anciennesDistances` est fourni et qu'une distance a été retirée, vide
+ * `distance_choisie` sur les réponses qui la référençaient (sans toucher à
+ * `reponse`). L'adhérent reverra le formulaire pour choisir une distance valide.
+ *
+ * @returns {{ course, raw, distancesReinitialisees: number }}
  */
-export async function saveCourseCiblee(course) {
+export async function saveCourseCiblee(course, { anciennesDistances } = {}) {
   const now = new Date().toISOString();
   const payload = {
     afficher_participants: 'oui',
@@ -105,7 +120,32 @@ export async function saveCourseCiblee(course) {
   };
   const res = await sendBatch([op.upsert(SHEETS.COURSES_CIBLEES, 'id', payload)]);
   invalidate('tab:' + SHEETS.COURSES_CIBLEES);
-  return { course: payload, raw: res };
+
+  // Reset des distance_choisie devenues invalides
+  let distancesReinitialisees = 0;
+  if (anciennesDistances !== undefined) {
+    const oldL = parseDistances(anciennesDistances);
+    const newL = parseDistances(payload.distances);
+    const removed = oldL.filter(d => !newL.includes(d));
+    if (removed.length) {
+      const reps = await listReponsesPourCourse(payload.id);
+      const aReset = reps.filter(r =>
+        r.distance_choisie && removed.includes(String(r.distance_choisie).trim())
+      );
+      if (aReset.length) {
+        const ops = aReset.map(r => op.upsert(SHEETS.REPONSES_SONDAGE, 'id', {
+          ...r,
+          distance_choisie: '',
+          updated_at: now,
+        }));
+        await sendBatch(ops);
+        invalidate('tab:' + SHEETS.REPONSES_SONDAGE);
+        distancesReinitialisees = aReset.length;
+      }
+    }
+  }
+
+  return { course: payload, raw: res, distancesReinitialisees };
 }
 
 /** Supprime une course ciblée ET toutes les réponses associées. */
@@ -155,14 +195,6 @@ export async function saveReponse(r) {
   const res = await sendBatch([op.upsert(SHEETS.REPONSES_SONDAGE, 'id', payload)]);
   invalidate('tab:' + SHEETS.REPONSES_SONDAGE);
   return { reponse: payload, raw: res };
-}
-
-/** Parse le champ `distances` en liste normalisée. Retourne [] si vide. */
-export function parseDistances(raw) {
-  return String(raw || '')
-    .split(/[,;]/)
-    .map(s => s.trim())
-    .filter(Boolean);
 }
 
 /** Retrouve la réponse existante d'un adhérent pour une course (pour pré-remplir). */
