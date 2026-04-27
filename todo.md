@@ -179,18 +179,12 @@ MVP strict : réponses = oui/non/peut_etre seulement. Pas de covoit, logement, c
 - [x] Mobile @780 : compteurs réduits, déco `card-feature::after` masquée, hero-stats en 2 colonnes
 - [x] Très petit @360 : densification supplémentaire (paddings, font-sizes)
 
-## J7 — Doc finale + roadmap extensions
+## J7 — Doc finale + roadmap (faite 2026-04-27)
 
-- [ ] README.md mis à jour (nouveau produit, plus seulement bénévoles)
-- [ ] CLAUDE.md rafraîchi
-- [ ] lessons/ consolidées
-- [ ] Roadmap extensions documentée :
-  - [ ] Génération posts Facebook automatique
-  - [ ] Export CSV/Excel/PDF
-  - [ ] Stats annuelles club
-  - [ ] Fiche course détaillée
-  - [ ] Pages souvenirs / galerie
-  - [ ] Classement interne informatif (opt-in)
+- [x] [README.md](README.md) réécrit complet : 2 modules, stack, premier déploiement, tests, limites assumées
+- [x] [CLAUDE.md](CLAUDE.md) §86 mis à jour (7 onglets), §96 mis à jour (modules auth/, store/sondages.js, vues sondages-* et admin-*), nouvelle section §3ter "Module sondages" avec frontière d'accès, modèle de données, cohérence distances, préremplissage, garde anti-corruption Apps Script
+- [x] [docs/ROADMAP.md](docs/ROADMAP.md) créé : 14 idées d'extensions classées (sondages / base club / archi), avec effort estimé
+- [~] lessons/ : non consolidées volontairement (10 fichiers déjà bien découpés par sujet, fusion = perte d'info)
 
 ---
 

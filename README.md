@@ -1,87 +1,62 @@
-# RaceResult Bénévoles
+# Ch'tis Marathoniens — Base Club
 
-Application web statique de suivi des résultats de course pour une liste de bénévoles.  
-Entre une URL d'événement RaceResult, récupère les résultats et les croise avec une base de bénévoles.
+Application web statique pour le club de course **Les Ch'tis Marathoniens** (~65 adhérents). Centralise la mémoire des participations et coordonne les sondages de courses ciblées.
 
-## Fonctionnalités
+## Deux modules
 
-- **Chargement des résultats** depuis n'importe quel événement RaceResult (via URL)
-- **Base de bénévoles** synchronisée depuis Google Sheets ou gérée manuellement
-- **Croisement automatique** des résultats avec la liste des bénévoles (matching tolérant)
-- **Export** en CSV ou copie dans le presse-papier (compatible Excel/Sheets)
-- **Responsive** : fonctionne sur mobile et desktop
-- **Stockage local** : les paramètres et bénévoles sont sauvegardés dans le navigateur
+### 1. Base de données du club (réservé au bureau)
 
-## Déploiement sur GitHub Pages
+- **Import de résultats** depuis RaceResult, ProLiveSport, ChronoRace/ACN, Athle.fr, Nordsport, ou fichier PDF/CSV
+- **Matching automatique** entre les noms des classements et la liste des adhérents (tolérant aux fautes, accents, ordre, particules)
+- **Arbitrage** des cas ambigus (homonymes, initiales)
+- **Tableau global** des résultats avec filtres (adhérent, course, distance, date, statut)
+- **Fiche adhérent** : meilleurs temps par distance, régularité par année, historique
+- **Chronique du club** par année
 
-### Automatique (recommandé)
+### 2. Sondages de courses ciblées (ouvert aux adhérents)
 
-Le workflow GitHub Actions `.github/workflows/deploy.yml` déploie automatiquement sur chaque push sur `main`.
+- Le bureau publie une course ciblée (date, lieu, distances proposées, liens d'inscription)
+- Les adhérents répondent **oui / non / peut-être** + choisissent une distance si la course en propose plusieurs
+- Modification de réponse autorisée (configurable par course)
+- Liste des participants visible par tous (configurable)
+- Préremplissage automatique : un adhérent qui a déjà répondu retrouve son choix coché à la prochaine visite
 
-1. Allez dans **Settings > Pages** de votre repo
-2. Sous **Source**, sélectionnez **GitHub Actions**
-3. Poussez sur `main` — le site sera disponible à `https://<username>.github.io/raceresult-benevoles/`
+## Stack
 
-### Manuel
+- HTML / CSS / JS vanilla, **modules ES6 natifs**, zéro build, zéro dépendance npm
+- Hébergement : **GitHub Pages** (déploiement auto via `.github/workflows/deploy.yml`)
+- Base de données : **Google Sheet** (7 onglets — voir [docs/SHEETS_SCHEMA.md](docs/SHEETS_SCHEMA.md))
+- Lecture : export CSV public via **Cloudflare Worker** (proxy CORS)
+- Écriture : **Google Apps Script Web App** (voir [docs/APPS_SCRIPT.md](docs/APPS_SCRIPT.md))
+- Auth bureau : mot de passe local en `sessionStorage` (UX uniquement, pas une vraie sécurité — voir CLAUDE.md §3ter)
 
-1. Allez dans **Settings > Pages**
-2. Sous **Source**, sélectionnez **Deploy from a branch**
-3. Choisissez `main` / `/ (root)`
-4. Le site sera déployé en quelques minutes
+## Premier déploiement
 
-## Configuration
+1. **Sheet** : créer un nouveau Google Sheet avec les 7 onglets décrits dans [docs/SHEETS_SCHEMA.md](docs/SHEETS_SCHEMA.md). Partager en lecture publique.
+2. **Apps Script** : suivre [docs/APPS_SCRIPT.md](docs/APPS_SCRIPT.md) pour déployer le Web App d'écriture.
+3. **Worker Cloudflare** : déployer [docs/cloudflare-worker.js](docs/cloudflare-worker.js).
+4. **Front** : compléter `src/config.js` avec ton SHEET_ID, l'URL Apps Script, le token, et choisir un `ADMIN_PASSWORD` pour le bureau.
+5. **GitHub Pages** : Settings → Pages → Source = GitHub Actions. Pousse sur `main`, le site se déploie en 1-2 min.
 
-Ouvrez la section **Paramètres** dans l'application pour configurer :
+## Tests
 
-| Paramètre | Description | Valeur par défaut |
-|-----------|-------------|-------------------|
-| URL du proxy CORS | Cloudflare Worker pour contourner CORS | `https://raceresult-proxy.cymusic29.workers.dev` |
-| Google Sheet ID | ID de la feuille contenant les bénévoles | *(vide)* |
+Trois pages HTML qui se lancent dans le navigateur, sans runner :
 
-### Format du Google Sheet
+- `tests/scraping.html` — fixtures par parser, canary sur Athle.fr / NordSport / generic
+- `tests/matching.html` — 13 cas matching homonymes / particules / inversions
+- `tests/sondages.html` — unitaires (parseDistances, compterReponses, IDs) + intégration (cycle CRUD réel sur la Sheet, cleanup automatique) + checklist manuelle
 
-La feuille doit contenir ces colonnes (la première ligne est l'en-tête) :
+## Documentation
 
-| Prénom | Nom | Rôle | Actif |
-|--------|-----|------|-------|
-| Jean | Dupont | Ravitaillement | oui |
-| Marie | Martin | Signaleur | oui |
+- [CLAUDE.md](CLAUDE.md) — architecture, décisions, modèle de données, état des jalons J0→J8
+- [todo.md](todo.md) — backlog par jalon
+- [docs/SHEETS_SCHEMA.md](docs/SHEETS_SCHEMA.md) — schéma des 7 onglets
+- [docs/APPS_SCRIPT.md](docs/APPS_SCRIPT.md) — déploiement du Web App
+- [docs/ROADMAP.md](docs/ROADMAP.md) — extensions futures
+- [lessons/](lessons/) — leçons accumulées (incidents, pièges, décisions)
 
-La feuille doit être **partagée publiquement** (Fichier > Partager > Tout le monde avec le lien).
+## Limites assumées
 
-## Proxy CORS (Cloudflare Worker)
-
-L'application nécessite un proxy CORS pour accéder aux API RaceResult et Google Sheets.  
-Déployez ce worker sur Cloudflare :
-
-```js
-export default {
-  async fetch(request) {
-    const url = new URL(request.url);
-    const targetUrl = url.searchParams.get('url');
-
-    if (!targetUrl) {
-      return new Response('Paramètre "url" manquant', { status: 400 });
-    }
-
-    const response = await fetch(targetUrl, {
-      headers: { 'User-Agent': 'RaceResult-Benevoles-Proxy/1.0' }
-    });
-
-    const headers = new Headers(response.headers);
-    headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-
-    return new Response(response.body, {
-      status: response.status,
-      headers
-    });
-  }
-};
-```
-
-## Stack technique
-
-- HTML / CSS / JS vanilla (zéro dépendance)
-- Pas de framework, pas de build step
-- Un seul fichier `index.html`
+- **Pas une vraie sécurité** côté front. Le repo est public, le SHARED_TOKEN est dans le bundle, n'importe qui qui le lit peut écrire dans la Sheet via POST. Risque d'intégrité accepté pour la simplicité (cf. CLAUDE.md §3ter).
+- **Sheet plafonne** vers 20-30 k lignes. Si dépassement, migration prévue vers backend (option A2 — voir [docs/ROADMAP.md](docs/ROADMAP.md)).
+- Apps Script a des **quotas** (6 min/exécution, 20 k lignes/écriture). Les opérations sont batchées pour rester dedans.

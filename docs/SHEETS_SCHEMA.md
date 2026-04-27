@@ -135,6 +135,7 @@ Une ligne = une course ciblée par le bureau, ouverte à un sondage de participa
 | `url_officielle` | url | non | | |
 | `url_inscription` | url | non | | |
 | `description` | string | non | | Commentaire libre du bureau. |
+| `course_id` | string | non | `course_xxx` | FK vers `Courses.id` une fois la course importée (J9 — bilan participation). Permet de croiser réponses sondage ↔ résultats réels pour le remboursement. Vide tant que pas lié manuellement. |
 | `statut` | enum | oui | `brouillon` / `publiee` / `cloturee` / `archivee` | Seul `publiee` est visible côté adhérent. |
 | `date_limite_reponse` | `YYYY-MM-DD` | non | `2025-10-10` | Au-delà, le formulaire est bloqué côté UI. |
 | `afficher_participants` | `oui`/`non` | oui | `oui` | Si `non`, l'adhérent voit seulement des compteurs, pas les noms. |

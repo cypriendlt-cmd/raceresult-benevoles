@@ -83,7 +83,7 @@ Ton UI : **régularité + mémoire**. Pas de podium visible par défaut. Records
 ### Contrainte majeure assumée
 Sheets n'est **pas une vraie DB**. Limite pratique ~20-30 k lignes de résultats avant lenteurs. Si le club dépasse ce seuil, migration vers backend + SQLite (option A2) à prévoir — la couche d'accès (`src/store/`) est pensée pour être remplaçable.
 
-### Schéma de données (4 onglets Sheet — voir [docs/SHEETS_SCHEMA.md](docs/SHEETS_SCHEMA.md))
+### Schéma de données (7 onglets Sheet — voir [docs/SHEETS_SCHEMA.md](docs/SHEETS_SCHEMA.md))
 
 | Onglet | Rôle |
 |---|---|
@@ -92,51 +92,52 @@ Sheets n'est **pas une vraie DB**. Limite pratique ~20-30 k lignes de résultats
 | `Resultats` | Une ligne = une participation (FK member + race) |
 | `Matching_Overrides` | Décisions manuelles persistées (match forcé, refus) |
 | `Imports` | Journal d'imports (date, source, URL, volume, user) |
+| `CoursesCiblees` | Courses ciblées par le bureau pour sondage (J8 — module sondages) |
+| `ReponsesSondage` | Réponses des adhérents (oui/non/peut_etre + distance) |
 
 ### Modules frontend (plan de découpage)
 
 ```
-index.html                  ← shell + mount points, charge src/main.js
+index.html                  ← shell historique (v1)
+app.html                    ← shell v2 — entrée principale
 src/
-  main.js                   ← bootstrap + router
-  config.js                 ← constantes (proxy, sheet IDs, script URL)
+  main.js                   ← bootstrap + router + guards admin + nav burger
+  config.js                 ← constantes (proxy, sheet ids, script url, ADMIN_PASSWORD)
+  auth/
+    session.js              ← loginAdmin/isAdmin/logoutAdmin (sessionStorage, UX-only)
   store/
     sheets.js               ← lecture CSV public
     appsScript.js           ← écriture via Apps Script
     cache.js                ← cache localStorage + invalidation
-    index.js                ← API façade (remplaçable pour migration A2)
-  scraping/
-    index.js                ← dispatch selon URL
-    detect.js               ← détection type de page
-    parsers/
-      raceresult.js
-      prolivesport.js
-      acnTiming.js
-      athleFr.js
-      nordsport.js
-      genericHtml.js
-      pdf.js
-      csv.js
-    normalize.js            ← normalisation commune (nom/prénom/temps/date)
-  matching/
-    normalize.js            ← accents/casse/tokens
-    score.js                ← score de confiance (certain/probable/douteux/absent)
-    overrides.js            ← application des décisions manuelles
+    index.js                ← façade lectures/écritures résultats
+    sondages.js             ← façade module sondages (CoursesCiblees + ReponsesSondage)
+  scraping/                 ← cf. §3bis
+  matching/                 ← scoring + overrides + lookup
   ui/
     views/
-      import.js
-      imports-history.js
-      results-table.js
-      member.js
-      club-history.js
-      matching-review.js
-    components/             ← atomes partagés
-    router.js
-    styles.css
+      dashboard.js          ← accueil bureau (stats, top, inactifs)
+      import.js             ← scrape → preview → persist
+      imports-history.js    ← journal des imports
+      results-table.js      ← tableau global filtré
+      member.js             ← fiche adhérent
+      club-history.js       ← chronique par année
+      matching-review.js    ← arbitrage des ambigus
+      course.js             ← détail d'une course
+      sondages-list.js      ← (public) liste des courses ciblées publiées
+      sondages-detail.js    ← (public) infos + formulaire de réponse + participants
+      login-admin.js        ← login bureau (mot de passe → sessionStorage)
+      admin-courses-list.js ← (admin) liste/CRUD des courses ciblées
+      admin-course-edit.js  ← (admin) formulaire édition
+      admin-poll-detail.js  ← (admin) tableau réponses + suppression
+    components/             ← atomes partagés (helpers `el()`, badges, alerts…)
+    router.js               ← hash-based avec params
+    styles.css              ← design tokens Ch'tis + responsive (burger, stack-cards)
   utils/
-    text.js                 ← normaliser, stripHTML, splitNomPrenom
+    text.js                 ← normaliser, stripHTML, splitNomPrenom (source unique)
     time.js                 ← parsing de temps multi-format
-    date.js
+    date.js                 ← parseDate + formatDate + isPast
+    id.js                   ← stableId, randomId, courseId, resultatId
+    csv.js                  ← parseCSV / rowsToObjects
 ```
 
 ## 3. Flux de données (import d'une course)
@@ -217,6 +218,31 @@ catch et affiche. Pas de silent fail.
 - `athleFr` : dépend du `<tr><td><a>` — canary sur fixture figée.
 - `genericHtml` : heuristique scoring — canary sur fixture figée.
 - `nordsport` : extraction iframe → clax — canary sur fixture XML.
+
+## 3ter. Module sondages (J8, livré 2026-04-25)
+
+### Objectif
+Permettre au bureau de cibler des courses (10 km de Pérenchies, marathon, etc.) et aux adhérents simples de répondre **oui / non / peut-être** + choisir une distance si la course en propose plusieurs.
+
+### Frontière d'accès (option B — décidée et assumée)
+- **Une seule porte d'entrée applicative** : même app, même URL.
+- **Adhérents simples** : seuls `#/sondages` et `#/sondages/<id>` sont accessibles. Le reste des routes est gardé par `guardAdmin()` dans [src/main.js](src/main.js) → redirige vers `#/sondages`. Nav réduite à `Sondages` + `Admin`.
+- **Bureau** : login par mot de passe (`ADMIN_PASSWORD` dans [src/config.js](src/config.js)) → flag posé en `sessionStorage` → toutes les vues débloquées.
+- **Bypassable en 1 ligne de devtools** (`sessionStorage.setItem('chtis.admin','1')`) — assumé. Ce n'est pas une frontière de sécurité, c'est une frontière UX. Cf. [lessons/2026-04-24-module-sondages-acces.md](lessons/2026-04-24-module-sondages-acces.md).
+- **Pas de second token côté Apps Script** : repo public, données non sensibles, risque d'intégrité accepté. À revisiter si vandalisme constaté ou migration A2.
+
+### Modèle de données (cf. SHEETS_SCHEMA §6 et §7)
+- `CoursesCiblees` : id, nom, date, lieu, distances (csv libre), liens, statut `brouillon|publiee|cloturee|archivee`, `date_limite_reponse`, `afficher_participants`, `autoriser_modif_reponse`.
+- `ReponsesSondage` : id stable = `rep_<hash(course_id, adherent_id ou prenom+nom)>`, donc upsert naturel — un adhérent qui re-répond écrase sa précédente réponse. Champs : `reponse` (oui/non/peut_etre), `distance_choisie` (vide si réponse ≠ oui ou si 1 seule distance), `created_at`, `updated_at`.
+
+### Cohérence distances
+Si l'admin retire une distance d'une course après que des adhérents y ont répondu, [store/sondages.js:saveCourseCiblee()](src/store/sondages.js) vide automatiquement les `distance_choisie` devenues invalides. La réponse oui/non/peut_etre est conservée. Côté adhérent, le préremplissage coche son oui mais laisse la distance vide → il choisit dans la nouvelle liste. Bandeau d'avertissement côté admin : "X réponses avaient une distance retirée".
+
+### Préremplissage
+Sur `#/sondages/<id>`, dès que l'adhérent tape son nom (datalist depuis `read.adherents()`), un listener `change` cherche dans les réponses chargées une entrée matchant (par `adherent_id` strict, sinon par prénom+nom normalisés). Si trouvée, pré-coche `reponse` + `distance_choisie`, affiche un bandeau bleu "Tu as déjà répondu le X — tu peux modifier ci-dessous".
+
+### Garde Apps Script anti-corruption
+[docs/apps-script-web-app.gs](docs/apps-script-web-app.gs) `getHeaders()` rejette les en-têtes corrompus (cellule > 80 caractères, retour à la ligne, doublons). Renforcement après incident 2026-04-26 où la cellule A1 de `ReponsesSondage` avait été aplatie en `"id rep_xxx rep_yyy ..."` (cause non identifiée — formule cachée ou extension navigateur). Cf. [lessons/2026-04-25-regex-unicode-plage-piege.md](lessons/2026-04-25-regex-unicode-plage-piege.md) pour le piège connexe sur les regex Unicode.
 
 ## 4. Conventions de code
 

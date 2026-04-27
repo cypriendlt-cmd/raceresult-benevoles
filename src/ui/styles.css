@@ -611,6 +611,64 @@ p { margin: 0 0 var(--sp-3) 0; }
 .btn-danger:hover { background: #eec1b7; border-color: var(--c-err); color: var(--c-err); }
 .btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 
+/* Bilan participation (croisement sondage ↔ résultats) */
+.bilan-card { border-left: 3px solid var(--c-blue); }
+
+.bilan-totaux {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+.bilan-counter {
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  text-align: center;
+  background: var(--c-bg);
+}
+.bilan-counter .emoji { font-size: 22px; line-height: 1; }
+.bilan-counter .val {
+  font-family: var(--font-serif);
+  font-variation-settings: 'SOFT' 50, 'opsz' 36;
+  font-size: 30px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+.bilan-counter .lbl {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--c-ink-40);
+  margin-top: 2px;
+}
+.bilan-ok   { background: #e7f2db; }
+.bilan-ok   .val { color: var(--match-certain); }
+.bilan-warn { background: #faecc8; }
+.bilan-warn .val { color: var(--c-warn); }
+.bilan-info { background: var(--c-blue-50); }
+.bilan-info .val { color: var(--c-blue-700); }
+
+.bilan-section {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+  border-left: 3px solid var(--c-border-2);
+}
+.bilan-section[open] { background: var(--c-surface); }
+.bilan-section summary { cursor: pointer; padding: 4px 0; }
+.bilan-ok          { border-left-color: var(--c-ok); }
+.bilan-warn        { border-left-color: var(--c-warn); }
+.bilan-info        { border-left-color: var(--c-blue); }
+
+@media (max-width: 780px) {
+  .bilan-totaux { grid-template-columns: 1fr; gap: var(--sp-2); }
+  .bilan-counter .val { font-size: 22px; }
+}
+
 /* Mini bouton supprimer dans les tables */
 .btn-del {
   padding: 4px 9px;

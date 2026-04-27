@@ -3,6 +3,8 @@
 import { el, spinner, alert } from '../components/helpers.js';
 import { isAdmin } from '../../auth/session.js';
 import { getCourseCiblee, saveCourseCiblee, deleteCourseCiblee } from '../../store/sondages.js';
+import { read } from '../../store/index.js';
+import { formatDate } from '../../utils/date.js';
 
 const STATUT_LABELS = {
   brouillon: 'Brouillon',
@@ -15,7 +17,10 @@ export default async function renderAdminCourseEdit(root, params) {
   if (!isAdmin()) { location.hash = '#/admin'; return; }
 
   const id = params[0] ? decodeURIComponent(params[0]) : null;
-  const existante = id ? await getCourseCiblee(id) : null;
+  const [existante, coursesScrapees] = await Promise.all([
+    id ? getCourseCiblee(id) : Promise.resolve(null),
+    read.courses().catch(() => []),
+  ]);
   const course = existante || { statut: 'brouillon', afficher_participants: 'oui', autoriser_modif_reponse: 'oui' };
 
   // Barre de navigation contextuelle
@@ -48,6 +53,21 @@ export default async function renderAdminCourseEdit(root, params) {
 
   // Section 3 — Description
   form.appendChild(section('Description', field('Commentaire libre', textarea('description', course.description, 4, 'Parcours, rendez-vous, covoiturage, etc.'))));
+
+  // Section 3bis — Liaison course importée (pour bilan participation)
+  const optionsCourses = [['', '— Aucune (pas de bilan)']].concat(
+    coursesScrapees
+      .slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      .map(c => [c.id, `${c.nom || '(sans nom)'} — ${formatDate(c.date, 'short')}${c.lieu ? ' · ' + c.lieu : ''}`])
+  );
+  form.appendChild(section('Bilan participation (après import)',
+    el('div', {}, [
+      el('p.muted', { style: 'margin-bottom: 12px;' },
+        'Une fois la course terminée et ses résultats importés, lie-la ici pour croiser les réponses du sondage avec les vrais participants. Utile pour les remboursements.'),
+      field('Course importée correspondante', selectField('course_id', course.course_id || '', optionsCourses)),
+    ])
+  ));
 
   // Section 4 — Sondage
   form.appendChild(section('Paramètres du sondage', el('div.form-grid', {}, [
@@ -93,6 +113,7 @@ export default async function renderAdminCourseEdit(root, params) {
     payload.statut = fd.get('statut');
     payload.afficher_participants = fd.get('afficher_participants');
     payload.autoriser_modif_reponse = fd.get('autoriser_modif_reponse');
+    payload.course_id = (fd.get('course_id') || '').trim();
     try {
       const { course: saved, distancesReinitialisees } = await saveCourseCiblee(payload, {
         anciennesDistances: existante ? existante.distances : undefined,

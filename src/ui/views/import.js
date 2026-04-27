@@ -133,7 +133,80 @@ function renderStatus(root) {
   if (state.saved) {
     root.appendChild(uiAlert('ok',
       `Import enregistré : ${state.saved.course.nom} — ${state.saved.resultats.length} résultats persistés.`));
+    root.appendChild(renderLierSondage(state.saved.course));
   }
+}
+
+/**
+ * Après import : propose de lier la course importée à un sondage existant
+ * (CourseCiblee sans course_id rempli, date proche). Optionnel — l'admin
+ * peut toujours faire la liaison plus tard depuis l'édition de la course ciblée.
+ */
+function renderLierSondage(courseImportee) {
+  const card = el('div.card', { style: 'border-style: dashed;' });
+  card.appendChild(el('h3', { style: 'margin-top: 0;' }, 'Lier à un sondage existant ?'));
+  card.appendChild(el('p.muted', { style: 'margin: 4px 0 12px;' },
+    'Si cette course faisait l\'objet d\'un sondage de participation, lie-la pour activer le bilan (promesses tenues / forfaits).'));
+
+  const zone = el('div', {}, el('p.muted', {}, [spinner(), ' Recherche de sondages candidats…']));
+  card.appendChild(zone);
+
+  (async () => {
+    try {
+      const { listCoursesCiblees, saveCourseCiblee } = await import('../../store/sondages.js');
+      const ciblees = await listCoursesCiblees();
+      const candidates = ciblees.filter(cc => !cc.course_id && proche(cc.date, courseImportee.date, 30));
+      zone.replaceChildren();
+      if (!candidates.length) {
+        zone.appendChild(el('p.muted', {}, 'Aucun sondage candidat à proximité de cette date.'));
+        return;
+      }
+      const select = el('select', { style: 'min-width: 280px; margin-right: 8px;' },
+        [['', '— Choisir un sondage —']]
+          .concat(candidates.sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+            .map(c => [c.id, `${c.nom || '(sans nom)'} — ${c.date}${c.lieu ? ' · ' + c.lieu : ''}`]))
+          .map(([v, lbl]) => {
+            const o = el('option', { value: v }, lbl);
+            return o;
+          })
+      );
+      const btn = el('button.btn.btn-primary', { type: 'button' }, 'Lier');
+      const feedback = el('div', { style: 'margin-top: 8px;' });
+
+      btn.addEventListener('click', async () => {
+        const ccId = select.value;
+        if (!ccId) return;
+        const cc = ciblees.find(c => c.id === ccId);
+        if (!cc) return;
+        btn.disabled = true; btn.textContent = '…';
+        try {
+          await saveCourseCiblee({ ...cc, course_id: courseImportee.id });
+          feedback.replaceChildren(uiAlert('ok',
+            'Sondage lié. Va dans #/admin/sondage/' + ccId + ' pour voir le bilan.'));
+          select.disabled = true;
+          btn.textContent = 'Lié ✓';
+        } catch (err) {
+          btn.disabled = false; btn.textContent = 'Lier';
+          feedback.replaceChildren(uiAlert('err', err.message));
+        }
+      });
+
+      zone.appendChild(el('div', { style: 'display: flex; gap: 8px; flex-wrap: wrap; align-items: center;' }, [select, btn]));
+      zone.appendChild(feedback);
+    } catch (err) {
+      zone.replaceChildren(uiAlert('err', err.message));
+    }
+  })();
+
+  return card;
+}
+
+function proche(dateA, dateB, joursMax) {
+  if (!dateA || !dateB) return false;
+  const a = Date.parse(dateA);
+  const b = Date.parse(dateB);
+  if (isNaN(a) || isNaN(b)) return false;
+  return Math.abs(a - b) / (1000 * 60 * 60 * 24) <= joursMax;
 }
 
 function renderPreview(root) {
