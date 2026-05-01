@@ -180,9 +180,15 @@ function renderLierSondage(courseImportee) {
         if (!cc) return;
         btn.disabled = true; btn.textContent = '…';
         try {
-          await saveCourseCiblee({ ...cc, course_id: courseImportee.id });
+          // La course a eu lieu : on lie ET on clôture/archive le sondage.
+          // Plus de réponses possibles, plus d'affichage côté adhérent.
+          await saveCourseCiblee({
+            ...cc,
+            course_id: courseImportee.id,
+            statut: 'archivee',
+          });
           feedback.replaceChildren(uiAlert('ok',
-            'Sondage lié. Va dans #/admin/sondage/' + ccId + ' pour voir le bilan.'));
+            'Sondage lié et archivé. Va dans #/admin/sondage/' + ccId + ' pour voir le bilan.'));
           select.disabled = true;
           btn.textContent = 'Lié ✓';
         } catch (err) {

@@ -16,6 +16,7 @@ import renderLoginAdmin     from './ui/views/login-admin.js';
 import renderAdminCoursesList from './ui/views/admin-courses-list.js';
 import renderAdminCourseEdit  from './ui/views/admin-course-edit.js';
 import renderAdminPollDetail  from './ui/views/admin-poll-detail.js';
+import renderAccueilPublic    from './ui/views/accueil-public.js';
 import { isAdmin }            from './auth/session.js';
 
 // Toutes les vues "Base Club" (imports, résultats, adhérents, etc.) sont
@@ -30,8 +31,9 @@ function guardAdmin(viewFn) {
   };
 }
 
-// Route racine : dashboard pour les admins, sondages pour tout le monde sinon.
-route('#/',          (root, params) => isAdmin() ? renderDashboard(root, params) : (location.hash = '#/sondages'));
+// Route racine : dashboard admin sinon vue publique d'accueil.
+route('#/',          (root, params) => isAdmin() ? renderDashboard(root, params) : renderAccueilPublic(root, params));
+route('#/accueil',   renderAccueilPublic);
 route('#/dashboard', guardAdmin(renderDashboard));
 route('#/import',    guardAdmin(renderImport));
 route('#/imports',   guardAdmin(renderImportsHistory));
@@ -72,16 +74,16 @@ setNotFound((root) => {
   ]));
 });
 
-// Route par défaut à l'ouverture : dashboard pour admin, sondages pour le public.
+// Route par défaut à l'ouverture : dashboard pour admin, accueil public sinon.
 if (!location.hash || location.hash === '#') {
-  location.hash = isAdmin() ? '#/dashboard' : '#/sondages';
+  location.hash = isAdmin() ? '#/dashboard' : '#/accueil';
 }
 
 start();
 
 // Les liens admin-only sont masqués aux non-admins (UX, pas sécurité).
 // Seuls "Sondages" et "Admin" restent visibles pour un adhérent simple.
-const BUREAU_HREFS = ['#/dashboard', '#/import', '#/imports', '#/resultats', '#/membre', '#/club', '#/revue'];
+const BUREAU_HREFS = ['#/import', '#/imports', '#/resultats', '#/membre', '#/club', '#/revue'];
 function refreshNav() {
   const admin = isAdmin();
   BUREAU_HREFS.forEach(href => {

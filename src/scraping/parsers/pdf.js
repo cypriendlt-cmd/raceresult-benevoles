@@ -9,6 +9,7 @@
 
 import { normalizeLigne, normalizeCourse, parseDistanceKm, deduireType } from '../normalize.js';
 import { parseDate } from '../../utils/date.js';
+import { tempsEnSecondes } from '../../utils/time.js';
 
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 
@@ -147,12 +148,21 @@ export function parseLignes(lignes) {
     }
     if (prenomParts.length === 0) return;
 
+    // Cherche un éventuel temps net dans la suite. ATTENTION : la colonne "Moy."
+    // (allure min/km, ex. "3:24") matche le même regex que les temps. On rejette
+    // tout candidat dont la magnitude est très différente du temps officiel
+    // (l'allure est ~5x plus petite que le temps total). Voir Dour 5km 2026.
+    const officielSec = tempsEnSecondes(tempsOff);
     const regexTempsGlobal = /(\d{1,2}:\d{2}(?::\d{2})?)/g;
     let tempsNet = tempsOff;
     let mm;
     while ((mm = regexTempsGlobal.exec(apres)) !== null) {
       const before = apres.charAt(mm.index - 1);
       if (before === '+' || before === '-') continue;
+      const candidatSec = tempsEnSecondes(mm[1]);
+      if (officielSec && candidatSec) {
+        if (candidatSec < officielSec * 0.5 || candidatSec > officielSec * 1.05) continue;
+      }
       tempsNet = mm[1];
       break;
     }
