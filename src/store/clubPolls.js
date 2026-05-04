@@ -185,7 +185,8 @@ export async function remove(sondageId) {
  */
 export async function saveReponse(r) {
   if (!r.sondage_id) throw new Error('sondage_id requis');
-  if (!r.prenom || !r.nom) throw new Error('prenom + nom requis');
+  // Saisie libre autorisée : prenom peut être vide tant que `nom` (ou le texte libre) est rempli.
+  if (!r.nom && !r.prenom) throw new Error('nom requis');
   if (!Array.isArray(r.options_choisies) || !r.options_choisies.length) {
     throw new Error('au moins une option doit être choisie');
   }
