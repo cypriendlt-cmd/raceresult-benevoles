@@ -11,6 +11,7 @@ const RE_ACN = /acn-timing\.com\//i;
 const RE_ATHLEFR = /athle\.fr\//i;
 const RE_NORDSPORT = /nordsport|glive|g-live/i;
 const RE_SPORTHIVE = /sporthive\.com|speedhive\.com/i;
+const RE_ULTRATIMING = /ultratiming\.live\//i;
 
 export function detectSource(urlStr) {
   if (!urlStr) throw new Error('URL vide');
@@ -49,6 +50,13 @@ export function detectSource(urlStr) {
     const m = url.match(/events\/s\/(\d+)\/race\/(\d+)/);
     if (!m) throw new Error("Sporthive : IDs d'événement et de course introuvables dans l'URL");
     return { source: 'sporthive', url, eventId: m[1], raceId: m[2] };
+  }
+
+  if (RE_ULTRATIMING.test(url)) {
+    // https://www.ultratiming.live/evenement/<eventSlug>/epreuve/<trialSlug>/resultats
+    const m = url.match(/ultratiming\.live\/(?:[a-z]{2}\/)?evenement\/([^/]+)\/epreuve\/([^/?#]+)/i);
+    if (!m) throw new Error('UltraTiming : slugs evenement/epreuve introuvables dans l\'URL');
+    return { source: 'ultratiming', url, eventSlug: m[1], trialSlug: m[2] };
   }
 
   return { source: 'generic', url };

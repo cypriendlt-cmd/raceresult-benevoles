@@ -7,8 +7,9 @@ import { indexOverrides } from '../../matching/overrides.js';
 import { indexAdherentsParNom } from '../../matching/normalize.js';
 import { scrapeFromUrl, parseFile } from '../../scraping/index.js';
 import { matchBatch, stats as matchStats } from '../../matching/index.js';
-import { read, saveImport, findCourseExistante, deleteImport, op as storeOp, sendBatch } from '../../store/index.js';
+import { read, saveImport, findCourseExistante, deleteImport, saveOverride, op as storeOp, sendBatch } from '../../store/index.js';
 import { SHEETS } from '../../config.js';
+import { normaliser } from '../../utils/text.js';
 
 // état local de la vue (par mount)
 let state = null;
@@ -306,8 +307,9 @@ function renderTable(bundle, idx) {
     return (parseInt(a.l.rang_general) || 99999) - (parseInt(b.l.rang_general) || 99999);
   });
 
-  // Pagination légère : si > 300 lignes à afficher, on limite et on ajoute un bouton "voir tout"
-  const LIMIT = 300;
+  // Cap d'affichage : raisonnable pour le DOM (>5000 lignes commence à ramer en rendu).
+  // Si tu y arrives c'est que tu importes une course massive — utilise "Adhérents reconnus".
+  const LIMIT = 5000;
   const tronque = filtre.length > LIMIT;
   const affiche = tronque ? filtre.slice(0, LIMIT) : filtre;
 
@@ -324,6 +326,13 @@ function renderTable(bundle, idx) {
     ])
   ]);
   table.appendChild(thead);
+
+  // Datalist partagée pour la liaison manuelle des lignes "absent"
+  const datalistId = `adh-list-import-${idx}`;
+  const datalist = el('datalist', { id: datalistId });
+  (state.adherents || []).forEach(a => {
+    datalist.appendChild(el('option', { value: `${a.prenom} ${a.nom}` }));
+  });
 
   const tbody = el('tbody');
   if (affiche.length === 0) {
@@ -342,8 +351,6 @@ function renderTable(bundle, idx) {
         tr.style.opacity = e.target.checked ? '' : '.4';
       }
     });
-    const adh = l.adherent_id ? adherentsById.get(l.adherent_id) : null;
-    const adhLabel = adh ? `${adh.prenom} ${adh.nom}` : (l.match_status === 'ambigu' ? `${l.candidates.length} candidats` : '—');
 
     tr.appendChild(el('td', {}, cb));
     tr.appendChild(el('td.num', {}, String(l.rang_general ?? '')));
@@ -351,21 +358,92 @@ function renderTable(bundle, idx) {
     tr.appendChild(el('td', {}, l.nom_source || ''));
     tr.appendChild(el('td.num', { title: l.temps && l.temps !== l.temps_net ? 'Brut : ' + l.temps : '' }, tempsAffiche(l)));
     tr.appendChild(el('td', {}, l.categorie || ''));
-    tr.appendChild(el('td', {}, el('span', {}, [
-      badge(l.match_status),
-      el('span.muted', { style: 'margin-left:6px;' }, adhLabel)
-    ])));
+    tr.appendChild(el('td', {}, renderCorrespondance(l, idx, i, adherentsById, datalistId)));
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
 
   if (tronque) {
     const wrap = el('div');
+    wrap.appendChild(datalist);
     wrap.appendChild(el('div.tbl-wrap', {}, table));
     wrap.appendChild(el('div.empty', {}, `Affichage limité aux ${LIMIT} premières lignes sur ${filtre.length}. Bascule sur "Adhérents reconnus" pour voir tes membres en priorité.`));
     return wrap;
   }
-  return el('div.tbl-wrap', {}, table);
+  const wrap = el('div');
+  wrap.appendChild(datalist);
+  wrap.appendChild(el('div.tbl-wrap', {}, table));
+  return wrap;
+}
+
+/**
+ * Cellule "Correspondance" : badge + nom adhérent, ou input de liaison manuelle pour les `absent`.
+ */
+function renderCorrespondance(l, idx, i, adherentsById, datalistId) {
+  const span = el('span');
+
+  if (l.match_status === 'absent') {
+    const input = el('input', {
+      type: 'text',
+      list: datalistId,
+      placeholder: 'Lier à un adhérent…',
+      style: 'width: 200px;',
+      onchange: (e) => lierAdherentManuel(idx, i, e.target.value, e.target),
+    });
+    span.appendChild(badge('absent'));
+    span.appendChild(el('span', { style: 'margin-left:6px;' }, input));
+    return span;
+  }
+
+  const adh = l.adherent_id ? adherentsById.get(l.adherent_id) : null;
+  const adhLabel = adh ? `${adh.prenom} ${adh.nom}` : (l.match_status === 'ambigu' ? `${l.candidates.length} candidats` : '—');
+  span.appendChild(badge(l.match_status));
+  span.appendChild(el('span.muted', { style: 'margin-left:6px;' }, adhLabel));
+  return span;
+}
+
+/**
+ * Lie manuellement une ligne `absent` à un adhérent choisi dans la datalist.
+ * - Mute l'état local (sera persisté à la validation de l'import).
+ * - Crée un alias persistant (Matching_Overrides) pour que les prochains imports matchent automatiquement.
+ */
+async function lierAdherentManuel(idx, i, valeur, inputEl) {
+  const txt = String(valeur || '').trim();
+  if (!txt) return;
+  const cible = normaliser(txt);
+  const adh = (state.adherents || []).find(a => normaliser(`${a.prenom} ${a.nom}`) === cible);
+  if (!adh) {
+    inputEl.style.borderColor = 'var(--c-err)';
+    inputEl.title = 'Adhérent inconnu — choisis dans la liste';
+    return;
+  }
+
+  const ligne = state.courses[idx]?.lignes?.[i];
+  if (!ligne) return;
+
+  // Mutation locale immédiate
+  ligne.adherent_id = adh.id;
+  ligne.match_status = 'manuel';
+  ligne.match_score = 100;
+
+  // Re-render pour refléter le nouveau badge + nom
+  const root = document.getElementById('view');
+  root.innerHTML = ''; renderImport(root);
+
+  // Alias persistant en arrière-plan : les futurs imports avec ce prenom/nom source matchent auto
+  try {
+    await saveOverride({
+      type: 'alias',
+      prenom_source: ligne.prenom_source,
+      nom_source: ligne.nom_source,
+      adherent_id: adh.id,
+      scope: 'global',
+      note: `Liaison manuelle import ${ligne.prenom_source} ${ligne.nom_source} → ${adh.prenom} ${adh.nom}`,
+    });
+  } catch (e) {
+    state.error = `Liaison enregistrée pour cet import mais alias non sauvegardé (${e.message || e}). Le prochain import du même nom devra être relié à nouveau.`;
+    root.innerHTML = ''; renderImport(root);
+  }
 }
 
 async function validerImport(idx, { remplacer = false } = {}) {

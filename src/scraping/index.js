@@ -17,6 +17,7 @@ import * as acn from './parsers/acnTiming.js';
 import * as athlefr from './parsers/athleFr.js';
 import * as nordsport from './parsers/nordsport.js';
 import * as sporthive from './parsers/sporthive.js';
+import * as ultratiming from './parsers/ultratiming.js';
 import * as generic from './parsers/genericHtml.js';
 import * as pdfParser from './parsers/pdf.js';
 import * as csvParser from './parsers/csv.js';
@@ -31,6 +32,7 @@ export async function scrapeFromUrl(url) {
     case 'athlefr':      return await athlefr.scrape(detected);
     case 'nordsport':    return await nordsport.scrape(detected);
     case 'sporthive':    return await sporthive.scrape(detected);
+    case 'ultratiming':  return await ultratiming.scrape(detected);
     case 'generic':      return await generic.scrape(detected);
     default:
       throw new Error('Source inconnue : ' + detected.source);
@@ -47,4 +49,4 @@ export async function parseFile(file) {
 }
 
 // Ré-export des parseurs individuels pour tests unitaires
-export { raceresult, prolivesport, acn, athlefr, nordsport, sporthive, generic, pdfParser, csvParser };
+export { raceresult, prolivesport, acn, athlefr, nordsport, sporthive, ultratiming, generic, pdfParser, csvParser };
