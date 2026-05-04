@@ -103,7 +103,9 @@ function renderFormulaire({ sondage, options, adherents, reponses, onSaved }) {
   const banner = el('div.prefill-banner', { style: 'display:none' });
   form.appendChild(datalist);
   form.appendChild(el('div.field', {}, [
-    el('label', {}, 'Ton nom (prénom puis nom)'),
+    el('label', {}, 'Ton nom'),
+    el('p.muted', { style: 'margin: 0 0 6px; font-size: 12px;' },
+      'Choisis ton nom dans la liste, ou écris librement (ex : "DELATTRE + 1").'),
     inputIdentite,
     banner,
   ]));
@@ -201,8 +203,9 @@ function renderResultats(reponses, options) {
   const buckets = {};
   options.forEach(o => buckets[o] = []);
   reponses.forEach(r => {
+    const display = [r.prenom, r.nom].filter(Boolean).join(' ').trim() || '(anonyme)';
     parseOptions(r.options_choisies).forEach(o => {
-      if (buckets[o]) buckets[o].push(`${r.prenom} ${r.nom}`);
+      if (buckets[o]) buckets[o].push(display);
     });
   });
 
@@ -227,13 +230,14 @@ function renderResultats(reponses, options) {
   return el('div.card', {}, [ el('h2', {}, 'Qui a répondu quoi'), list ]);
 }
 
-// Helpers identité — alignés sur sondages-detail.js
+// Identité libre pour les sondages vie du club : si le texte matche un adhérent
+// (prenom + nom normalisés), on attache l'adherent_id ; sinon on stocke le texte
+// tel quel dans `nom` (prenom vide) — autorise "DELATTRE + 1", "Marie & Paul", etc.
 function resolveIdentite(identite, adherents) {
   const cible = normaliser(identite);
   const match = adherents.find(a => normaliser(`${a.prenom} ${a.nom}`) === cible);
   if (match) return { prenom: match.prenom, nom: match.nom, adherent_id: match.id };
-  const parts = identite.trim().split(/\s+/);
-  return { prenom: parts[0] || '', nom: parts.slice(1).join(' ') || '', adherent_id: '' };
+  return { prenom: '', nom: identite.trim(), adherent_id: '' };
 }
 
 function aDejaRepondu(reponses, identite) {

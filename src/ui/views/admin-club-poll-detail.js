@@ -77,8 +77,9 @@ async function render(root, id) {
       .sort((a, b) => (a.nom || '').localeCompare(b.nom || ''))
       .forEach(r => {
         const btn = el('button.btn.btn-ghost.btn-del', { type: 'button', title: 'Supprimer cette réponse' }, '✕');
+        const display = [r.prenom, r.nom].filter(Boolean).join(' ').trim() || '(anonyme)';
         btn.addEventListener('click', async () => {
-          if (!confirm(`Supprimer la réponse de ${r.prenom} ${r.nom} ?`)) return;
+          if (!confirm(`Supprimer la réponse de ${display} ?`)) return;
           btn.disabled = true;
           btn.textContent = '…';
           try {
@@ -142,7 +143,8 @@ function exportText(sondage, options, reponses) {
   reponses
     .slice().sort((a, b) => (a.nom || '').localeCompare(b.nom || ''))
     .forEach(r => {
-      lines.push(`  - ${r.prenom} ${r.nom} → ${parseOptions(r.options_choisies).join(', ')}`);
+      const display = [r.prenom, r.nom].filter(Boolean).join(' ').trim() || '(anonyme)';
+      lines.push(`  - ${display} → ${parseOptions(r.options_choisies).join(', ')}`);
     });
   return lines.join('\n');
 }
