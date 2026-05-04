@@ -16,6 +16,10 @@ import renderLoginAdmin     from './ui/views/login-admin.js';
 import renderAdminCoursesList from './ui/views/admin-courses-list.js';
 import renderAdminCourseEdit  from './ui/views/admin-course-edit.js';
 import renderAdminPollDetail  from './ui/views/admin-poll-detail.js';
+import renderClubPollDetail        from './ui/views/club-poll-detail.js';
+import renderAdminClubPollsList    from './ui/views/admin-club-polls-list.js';
+import renderAdminClubPollEdit     from './ui/views/admin-club-poll-edit.js';
+import renderAdminClubPollDetail   from './ui/views/admin-club-poll-detail.js';
 import renderAccueilPublic    from './ui/views/accueil-public.js';
 import { isAdmin }            from './auth/session.js';
 
@@ -49,6 +53,12 @@ route('#/sondages', (root, params) => {
   return renderSondagesDetail(root, params);
 });
 
+// Sondages "Vie du club" (public) — détail
+route('#/club-polls', (root, params) => {
+  if (!params.length) { location.hash = '#/sondages'; return; }
+  return renderClubPollDetail(root, params);
+});
+
 // Module sondages (admin) — toutes les routes tombent sur #/admin car le router
 // prend le 2e segment comme clé. On dispatche sur params.
 //
@@ -63,6 +73,10 @@ route('#/admin', (root, params) => {
   if (params[0] === 'courses' && params[1] === 'new') return renderAdminCourseEdit(root, []);
   if (params[0] === 'courses')                        return renderAdminCourseEdit(root, params.slice(1));
   if (params[0] === 'sondage')                        return renderAdminPollDetail(root, params.slice(1));
+  if (params[0] === 'club-polls' && params.length === 1) return renderAdminClubPollsList(root);
+  if (params[0] === 'club-polls' && params[1] === 'new') return renderAdminClubPollEdit(root, []);
+  if (params[0] === 'club-polls')                        return renderAdminClubPollEdit(root, params.slice(1));
+  if (params[0] === 'club-poll')                         return renderAdminClubPollDetail(root, params.slice(1));
   return renderLoginAdmin(root);
 });
 

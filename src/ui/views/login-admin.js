@@ -10,16 +10,23 @@ export default function renderLoginAdmin(root) {
     wrap.appendChild(el('div.card.card-feature', {}, [
       el('span.rule-eyebrow', {}, 'Espace bureau'),
       el('h1', { style: 'margin-top:12px' }, 'Tu es connecté.'),
-      el('p.muted', {}, 'Tu as accès à la gestion des courses ciblées et des sondages.'),
-      el('div.row', { style: 'margin-top:16px' }, [
-        el('a.btn.btn-primary', { href: '#/admin/courses' }, 'Gérer les courses ciblées'),
-        (() => {
-          const b = el('button.btn.btn-ghost', {}, 'Se déconnecter');
-          b.addEventListener('click', () => { logoutAdmin(); location.hash = '#/admin'; location.reload(); });
-          return b;
-        })(),
+      el('p.muted', {}, 'Choisis ce que tu veux gérer.'),
+    ]));
+    wrap.appendChild(el('div.admin-hub', {}, [
+      el('a.card.admin-hub-card', { href: '#/admin/courses' }, [
+        el('span.rule-eyebrow', {}, 'Sondages'),
+        el('h2', { style: 'margin: 8px 0 4px' }, 'Courses ciblées'),
+        el('p.muted', { style: 'margin: 0' }, 'Sondages de participation aux courses du bureau (oui / non / peut-être).'),
+      ]),
+      el('a.card.admin-hub-card', { href: '#/admin/club-polls' }, [
+        el('span.rule-eyebrow', {}, 'Sondages'),
+        el('h2', { style: 'margin: 8px 0 4px' }, 'Vie du club'),
+        el('p.muted', { style: 'margin: 0' }, 'Présence, horaires, aide bénévole, organisation.'),
       ]),
     ]));
+    const btnLogout = el('button.btn.btn-ghost', { style: 'margin-top: 16px' }, 'Se déconnecter');
+    btnLogout.addEventListener('click', () => { logoutAdmin(); location.hash = '#/admin'; location.reload(); });
+    wrap.appendChild(btnLogout);
     root.appendChild(wrap);
     return;
   }
@@ -38,7 +45,8 @@ export default function renderLoginAdmin(root) {
     feedback.innerHTML = '';
     const pwd = new FormData(form).get('pwd');
     if (loginAdmin(pwd)) {
-      location.hash = '#/admin/courses';
+      location.hash = '#/admin';
+      location.reload();
     } else {
       feedback.appendChild(alert('err', 'Mot de passe incorrect.'));
     }

@@ -188,6 +188,42 @@ MVP strict : réponses = oui/non/peut_etre seulement. Pas de covoit, logement, c
 
 ---
 
+## J9 — Sondages vie du club (2026-05-04, en cours)
+
+Décision : Option A — module séparé (pas de refonte unifiée). Cf. discussion 2026-05-04.
+MVP : types `unique` + `multi` uniquement (pas de texte libre, horaires, combinaisons).
+Réutilisation : helpers `el()`, `badge()`, `normaliser()`, datalist adhérents, classes CSS `.sondages-grid`/`.sondage-card`/`.sondage-totaux`/`.tbl-stack`.
+
+### Vague 1 — Données
+- [x] Apps Script : whitelist étendue à `SondagesClub` + `ReponsesSondagesClub`
+- [x] `src/config.js` : ajout `SHEETS.SONDAGES_CLUB` + `SHEETS.REPONSES_CLUB`
+- [ ] ❗ **Utilisateur** : créer dans la Sheet l'onglet `SondagesClub` avec colonnes : `id, titre, description, type_reponse, options, statut, date_debut, date_fin, date_limite_reponse, afficher_participants, autoriser_modif_reponse, created_at, updated_at, created_by`
+- [ ] ❗ **Utilisateur** : créer dans la Sheet l'onglet `ReponsesSondagesClub` avec colonnes : `id, sondage_id, adherent_id, prenom, nom, options_choisies, created_at, updated_at`
+- [ ] ❗ **Utilisateur** : redéployer l'Apps Script (nouvelle version) pour activer la whitelist
+
+### Vague 2 — Store
+- [x] `src/store/clubPolls.js` : `listAll`, `listPubliees`, `get`, `save`, `delete`, `close`, `archive`, `listReponses`, `listReponsesPourSondage`, `compterReponses`, `saveReponse`, `trouverReponseExistante`, `deleteReponse`, `parseOptions`, `formatOptions`
+- [x] Cleanup options retirées (équivalent `distancesReinitialisees`)
+
+### Vague 3 — UI adhérent
+- [x] `src/ui/views/sondages-list.js` : 2 sections "Courses ciblées" + "Vie du club"
+- [x] `src/ui/views/club-poll-detail.js` : titre, description, options dynamiques (radios si unique, checkboxes si multi), datalist adhérent, préremplissage, gates (clôturé/archivé/délai), liste participants
+
+### Vague 4 — UI admin
+- [x] `src/ui/views/login-admin.js` : 2 cartes "Courses ciblées" + "Vie du club" quand connecté
+- [x] `src/ui/views/admin-club-polls-list.js` : liste + statut + compteurs + actions
+- [x] `src/ui/views/admin-club-poll-edit.js` : formulaire CRUD avec options dynamiques (add/remove)
+- [x] `src/ui/views/admin-club-poll-detail.js` : compteurs par option + tableau réponses + suppression
+
+### Vague 5 — Routing
+- [x] `src/main.js` : routes `#/club-polls/:id`, `#/admin/club-polls[/new|/:id]`, `#/admin/club-poll/:id`
+
+### Vague 6 — Tests + cas limites
+- [ ] Cas limites manuels : 0 réponse, sondage clôturé, double réponse (upsert), modif réponse, archive, mobile 375/768/desktop
+- [ ] Régression module courses ciblées : non touché → smoke test admin
+
+---
+
 ## Bugs connus (existant)
 
 - [ ] Parser `genericHtml` casse silencieusement sur sites non standards

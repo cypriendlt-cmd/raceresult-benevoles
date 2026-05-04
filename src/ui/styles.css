@@ -950,3 +950,137 @@ input[type="radio"]:focus-visible + .distance-choice {
   .sondage-nom { font-size: 18px; }
   h1 { font-size: 24px; }
 }
+
+/* ============================================================
+   J9 — Sondages "Vie du club"
+   ============================================================ */
+
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--c-ink);
+  margin-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--c-border);
+  padding-bottom: 8px;
+}
+
+/* Hub admin (2 cartes) */
+.admin-hub {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+.admin-hub-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.admin-hub-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* Édition options (admin club poll edit) */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.option-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.option-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--c-surface);
+}
+
+/* Résultats par option (barres) — détail club poll */
+.club-poll-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.club-poll-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.club-poll-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 14px;
+}
+.club-poll-result-label { font-weight: 500; }
+.club-poll-result-n {
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink-70);
+  font-weight: 600;
+}
+.club-poll-result-bar {
+  background: var(--c-border);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+.club-poll-result-fill {
+  background: var(--c-blue);
+  height: 100%;
+  transition: width .3s ease;
+}
+.club-poll-result-people {
+  font-size: 12px;
+  color: var(--c-ink-40);
+  margin-top: 2px;
+}
+
+/* Choix de réponse — sondage vie du club (radios OU checkboxes) */
+.club-poll-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.club-poll-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px 16px;
+  border: 2px solid var(--c-border-2);
+  border-radius: var(--r);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  font-weight: 500;
+  transition: border-color .15s ease, background .15s ease;
+  user-select: none;
+}
+.club-poll-choice:hover { border-color: var(--c-brown); }
+.club-poll-choice input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--c-blue);
+}
+.club-poll-choice:has(input:checked) {
+  background: var(--c-blue-50);
+  border-color: var(--c-blue);
+  color: var(--c-blue-700);
+  font-weight: 600;
+}
+.club-poll-choice input:focus-visible {
+  outline: 2px solid var(--c-blue);
+  outline-offset: 2px;
+}
+.club-poll-choice-label { flex: 1; }

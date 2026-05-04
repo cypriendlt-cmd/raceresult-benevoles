@@ -39,6 +39,8 @@ export const SHEETS = {
   IMPORTS: 'Imports',
   COURSES_CIBLEES: 'CoursesCiblees',
   REPONSES_SONDAGE: 'ReponsesSondage',
+  SONDAGES_CLUB: 'SondagesClub',
+  REPONSES_CLUB: 'ReponsesSondagesClub',
 };
 
 export function get(key) {
