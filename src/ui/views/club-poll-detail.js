@@ -105,7 +105,7 @@ function renderFormulaire({ sondage, options, adherents, reponses, onSaved }) {
   form.appendChild(el('div.field', {}, [
     el('label', {}, 'Ton nom'),
     el('p.muted', { style: 'margin: 0 0 6px; font-size: 12px;' },
-      'Choisis ton nom dans la liste, ou écris librement (ex : "DELATTRE + 1").'),
+      'Choisis ton nom dans la liste, ou écris librement (ex : "Nom + 1").'),
     inputIdentite,
     banner,
   ]));
