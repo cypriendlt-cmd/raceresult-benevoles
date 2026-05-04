@@ -11,7 +11,7 @@ import { saveAdherent } from '../../store/index.js';
  * @returns {HTMLElement}
  */
 export function adherentForm({ prefill = {}, onDone, onCancel } = {}) {
-  const card = el('div.card', { style: 'background: #fbfaf6; border-color: var(--c-bleu);' });
+  const card = el('div.card', { style: 'background: #fbfaf6; border-color: var(--c-blue);' });
   card.appendChild(el('h3', {}, 'Ajouter un adhérent'));
 
   const status = el('div');

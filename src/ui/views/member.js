@@ -140,7 +140,7 @@ function renderStats(mesResultats) {
   annees.forEach(([an, n]) => {
     const h = Math.max(8, n * 12);
     rep.appendChild(el('div', { style: 'display: flex; flex-direction: column; align-items: center; gap: 4px;' }, [
-      el('div', { title: `${an} : ${n} courses`, style: `width: 32px; height: ${h}px; background: var(--c-bleu); border-radius: 2px;` }),
+      el('div', { title: `${an} : ${n} courses`, style: `width: 32px; height: ${h}px; background: var(--c-blue); border-radius: 2px;` }),
       el('span.muted', { style: 'font-size: 12px;' }, an),
       el('span.mono', {}, String(n)),
     ]));
