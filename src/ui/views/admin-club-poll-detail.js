@@ -3,7 +3,7 @@
 import { el, spinner, alert } from '../components/helpers.js';
 import { isAdmin } from '../../auth/session.js';
 import {
-  get, listReponsesPourSondage, compterReponses, parseOptions, deleteReponse,
+  get, listReponsesPourSondage, compterReponses, parseOptions, deleteReponse, nbPersonnes,
 } from '../../store/clubPolls.js';
 import { formatDate } from '../../utils/date.js';
 
@@ -60,13 +60,13 @@ async function render(root, id) {
     const feedback = el('div.form-feedback');
     root.appendChild(feedback);
 
-    // Tableau réponses
+    // Tableau réponses (1 colonne Nom unifiée + nb personnes)
     const card = el('div.card', { style: 'padding:0' });
     const wrap = el('div.tbl-wrap');
     const tbl = el('table.tbl.tbl-admin.tbl-stack');
     tbl.appendChild(el('thead', {}, el('tr', {}, [
       el('th', {}, 'Nom'),
-      el('th', {}, 'Prénom'),
+      el('th.num', {}, 'Pers.'),
       el('th', {}, 'Choix'),
       el('th', {}, 'Dernière MAJ'),
       el('th', {}, ''),
@@ -74,10 +74,15 @@ async function render(root, id) {
     const tbody = el('tbody');
     reponses
       .slice()
-      .sort((a, b) => (a.nom || '').localeCompare(b.nom || ''))
+      .sort((a, b) => {
+        const ka = (a.nom || a.prenom || '').toLowerCase();
+        const kb = (b.nom || b.prenom || '').toLowerCase();
+        return ka.localeCompare(kb);
+      })
       .forEach(r => {
         const btn = el('button.btn.btn-ghost.btn-del', { type: 'button', title: 'Supprimer cette réponse' }, '✕');
         const display = [r.prenom, r.nom].filter(Boolean).join(' ').trim() || '(anonyme)';
+        const n = nbPersonnes(r);
         btn.addEventListener('click', async () => {
           if (!confirm(`Supprimer la réponse de ${display} ?`)) return;
           btn.disabled = true;
@@ -92,8 +97,8 @@ async function render(root, id) {
           }
         });
         tbody.appendChild(el('tr', {}, [
-          el('td', { 'data-label': 'Nom', style: 'font-weight:600' }, r.nom || ''),
-          el('td', { 'data-label': 'Prénom' }, r.prenom || ''),
+          el('td', { 'data-label': 'Nom', style: 'font-weight:600' }, display),
+          el('td.num', { 'data-label': 'Personnes' }, n > 1 ? el('strong', { style: 'color: var(--c-blue-700)' }, String(n)) : String(n)),
           el('td', { 'data-label': 'Choix' }, parseOptions(r.options_choisies).join(', ')),
           el('td.mono', { 'data-label': 'Mise à jour' }, (r.updated_at || r.created_at || '').slice(0, 16).replace('T', ' ')),
           el('td', { 'data-label': '', style: 'text-align:right' }, btn),
@@ -111,25 +116,40 @@ async function render(root, id) {
 
 function renderCompteurs(reponses, options) {
   const cnt = compterReponses(reponses, options);
-  const total = reponses.length || 1;
+  const totalPersonnes = cnt.total_personnes;
+  const maxPersonnes = Math.max(1, ...options.map(o => cnt['personnes_' + o] || 0));
+
+  const totaux = el('div.club-poll-totaux', { style: 'margin-bottom: var(--sp-3)' }, [
+    el('div.totaux-item', {}, [
+      el('div.val', {}, String(reponses.length)),
+      el('div.lbl', {}, reponses.length <= 1 ? 'réponse' : 'réponses'),
+    ]),
+    el('div.totaux-item', {}, [
+      el('div.val', {}, String(totalPersonnes)),
+      el('div.lbl', {}, totalPersonnes <= 1 ? 'personne' : 'personnes'),
+    ]),
+  ]);
+
   const list = el('div.club-poll-results');
   options.forEach(o => {
-    const n = cnt[o] || 0;
-    const pct = Math.round((n / total) * 100);
+    const nbPers = cnt['personnes_' + o] || 0;
+    const nbRep = cnt['reponses_' + o] || 0;
+    const pct = Math.round((nbPers / maxPersonnes) * 100);
     list.appendChild(el('div.club-poll-result', {}, [
       el('div.club-poll-result-row', {}, [
         el('span.club-poll-result-label', {}, o),
-        el('span.club-poll-result-n', {}, `${n}`),
+        el('span.club-poll-result-n', {}, [
+          `${nbPers} pers.`,
+          nbPers !== nbRep ? el('span.muted', { style: 'margin-left:6px; font-weight:400; font-size:11px' }, `(${nbRep} rép.)`) : null,
+        ]),
       ]),
       el('div.club-poll-result-bar', {}, [
         el('div.club-poll-result-fill', { style: `width:${pct}%` }),
       ]),
     ]));
   });
-  return el('div.card', {}, [
-    el('h2', { style: 'margin-top:0' }, `${reponses.length} ${reponses.length === 1 ? 'réponse' : 'réponses'}`),
-    list,
-  ]);
+
+  return el('div.card', {}, [ totaux, list ]);
 }
 
 function exportText(sondage, options, reponses) {
@@ -137,11 +157,17 @@ function exportText(sondage, options, reponses) {
   lines.push(sondage.titre);
   lines.push('—'.repeat(40));
   const cnt = compterReponses(reponses, options);
-  options.forEach(o => lines.push(`• ${o} : ${cnt[o] || 0}`));
+  options.forEach(o => {
+    const nbPers = cnt['personnes_' + o] || 0;
+    const nbRep = cnt['reponses_' + o] || 0;
+    const suffix = nbPers !== nbRep ? ` (${nbRep} réponses)` : '';
+    lines.push(`• ${o} : ${nbPers} pers.${suffix}`);
+  });
   lines.push('');
-  lines.push(`${reponses.length} réponse(s) :`);
+  lines.push(`Total : ${reponses.length} réponses · ${cnt.total_personnes} personnes`);
+  lines.push('');
   reponses
-    .slice().sort((a, b) => (a.nom || '').localeCompare(b.nom || ''))
+    .slice().sort((a, b) => (a.nom || a.prenom || '').toLowerCase().localeCompare((b.nom || b.prenom || '').toLowerCase()))
     .forEach(r => {
       const display = [r.prenom, r.nom].filter(Boolean).join(' ').trim() || '(anonyme)';
       lines.push(`  - ${display} → ${parseOptions(r.options_choisies).join(', ')}`);

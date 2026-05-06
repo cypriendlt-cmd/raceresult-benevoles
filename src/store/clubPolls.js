@@ -81,13 +81,43 @@ export async function listReponsesPourSondage(sondageId) {
   return rows.filter(r => r.sondage_id === sondageId);
 }
 
-/** Compteurs par option : { 'Samedi 9h': 3, ... , total: N } */
+/**
+ * Détecte un éventuel "+N" dans le nom saisi (ex: "DELATTRE + 1", "Marie+2").
+ * Retourne le nb total de personnes à compter pour cette réponse (≥ 1).
+ * Un "+la nuit" ou "+invité" sans chiffre = 1 personne (pas de bonus).
+ */
+export function nbPersonnes(reponse) {
+  const txt = [reponse.prenom, reponse.nom].filter(Boolean).join(' ');
+  const m = txt.match(/\+\s*(\d+)/);
+  return 1 + (m ? parseInt(m[1], 10) : 0);
+}
+
+/**
+ * Compteurs par option.
+ *  - reponses_<opt> : nb de RÉPONSES qui ont coché cette option
+ *  - personnes_<opt> : nb de PERSONNES totales (avec invités "+N")
+ *  - total_reponses : nb total de réponses
+ *  - total_personnes : nb total de personnes (sans double-comptage : on prend
+ *    le max entre l'option qui ramène le plus de monde et le total naïf,
+ *    pour ne pas surcompter en multi-choix)
+ */
 export function compterReponses(reponses, options) {
-  const c = { total: reponses.length };
-  for (const o of options) c[o] = 0;
+  const c = { total_reponses: reponses.length, total_personnes: 0 };
+  for (const o of options) {
+    c['reponses_' + o] = 0;
+    c['personnes_' + o] = 0;
+    // legacy : c[o] = nb de réponses qui ont coché cette option
+    c[o] = 0;
+  }
   for (const r of reponses) {
+    const n = nbPersonnes(r);
+    c.total_personnes += n;
     for (const sel of parseOptions(r.options_choisies)) {
-      if (sel in c) c[sel]++;
+      if (('reponses_' + sel) in c) {
+        c['reponses_' + sel]++;
+        c['personnes_' + sel] += n;
+        c[sel]++;
+      }
     }
   }
   return c;

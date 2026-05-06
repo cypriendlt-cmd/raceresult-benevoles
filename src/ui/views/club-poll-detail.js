@@ -2,7 +2,7 @@
 
 import { el, spinner, alert } from '../components/helpers.js';
 import {
-  get, listReponsesPourSondage, compterReponses, saveReponse, parseOptions,
+  get, listReponsesPourSondage, compterReponses, saveReponse, parseOptions, nbPersonnes,
 } from '../../store/clubPolls.js';
 import { read } from '../../store/index.js';
 import { formatDate, isPast } from '../../utils/date.js';
@@ -41,13 +41,9 @@ async function render(root, id) {
     ]);
     root.appendChild(header);
 
-    // Compteurs : N réponses au total
-    root.appendChild(el('div.card', {}, [
-      el('p', { style: 'margin:0' }, [
-        el('strong', {}, String(reponses.length)),
-        ` ${reponses.length === 1 ? 'réponse' : 'réponses'} pour l'instant.`,
-      ]),
-    ]));
+    // Compteurs : N réponses · M personnes
+    const totalPersonnes = reponses.reduce((s, r) => s + nbPersonnes(r), 0);
+    root.appendChild(renderTotaux(reponses.length, totalPersonnes));
 
     // Gates écriture
     const closed = sondage.statut === 'cloturee';
@@ -195,11 +191,23 @@ function renderFormulaire({ sondage, options, adherents, reponses, onSaved }) {
   return card;
 }
 
+function renderTotaux(nbReponses, nbPersonnes) {
+  return el('div.card.club-poll-totaux', {}, [
+    el('div.totaux-item', {}, [
+      el('div.val', {}, String(nbReponses)),
+      el('div.lbl', {}, nbReponses <= 1 ? 'réponse' : 'réponses'),
+    ]),
+    el('div.totaux-item', {}, [
+      el('div.val', {}, String(nbPersonnes)),
+      el('div.lbl', {}, nbPersonnes <= 1 ? 'personne' : 'personnes'),
+    ]),
+  ]);
+}
+
 function renderResultats(reponses, options) {
   const cnt = compterReponses(reponses, options);
-  const total = reponses.length || 1;
 
-  // Index "qui a coché quoi"
+  // Pour chaque option : la liste des répondants (avec leur "+N" éventuel)
   const buckets = {};
   options.forEach(o => buckets[o] = []);
   reponses.forEach(r => {
@@ -209,25 +217,44 @@ function renderResultats(reponses, options) {
     });
   });
 
-  const list = el('div.club-poll-results');
+  // Max pour la barre de proportion : on cale sur l'option la plus peuplée
+  const maxPersonnes = Math.max(1, ...options.map(o => cnt['personnes_' + o] || 0));
+
+  const list = el('div.club-poll-options-blocks');
   options.forEach(o => {
-    const n = cnt[o] || 0;
-    const pct = Math.round((n / total) * 100);
-    list.appendChild(el('div.club-poll-result', {}, [
-      el('div.club-poll-result-row', {}, [
-        el('span.club-poll-result-label', {}, o),
-        el('span.club-poll-result-n', {}, `${n}`),
+    const nbRep = cnt['reponses_' + o] || 0;
+    const nbPers = cnt['personnes_' + o] || 0;
+    const pct = Math.round((nbPers / maxPersonnes) * 100);
+    const noms = buckets[o].slice().sort((a, b) => a.localeCompare(b));
+
+    const head = el('div.club-poll-block-head', {}, [
+      el('h3.club-poll-block-title', {}, o),
+      el('span.club-poll-block-count', {}, [
+        el('strong', {}, String(nbPers)),
+        ` ${nbPers <= 1 ? 'personne' : 'personnes'}`,
+        nbPers !== nbRep ? el('span.muted', { style: 'margin-left:6px; font-size:12px' }, `(${nbRep} ${nbRep <= 1 ? 'réponse' : 'réponses'})`) : null,
       ]),
-      el('div.club-poll-result-bar', {}, [
-        el('div.club-poll-result-fill', { style: `width:${pct}%` }),
-      ]),
-      buckets[o].length
-        ? el('div.club-poll-result-people', {}, buckets[o].sort((a, b) => a.localeCompare(b)).join(', '))
-        : null,
-    ]));
+    ]);
+
+    const bar = el('div.club-poll-result-bar', {}, [
+      el('div.club-poll-result-fill', { style: `width:${pct}%` }),
+    ]);
+
+    let body;
+    if (!noms.length) {
+      body = el('p.muted.club-poll-block-empty', {}, 'Personne pour l\'instant.');
+    } else {
+      body = el('ul.club-poll-people');
+      noms.forEach(n => body.appendChild(el('li', {}, n)));
+    }
+
+    list.appendChild(el('div.card.club-poll-block', {}, [head, bar, body]));
   });
 
-  return el('div.card', {}, [ el('h2', {}, 'Qui a répondu quoi'), list ]);
+  return el('div', {}, [
+    el('h2', { style: 'margin-top: var(--sp-5)' }, 'Qui a répondu quoi'),
+    list,
+  ]);
 }
 
 // Identité libre pour les sondages vie du club : si le texte matche un adhérent
