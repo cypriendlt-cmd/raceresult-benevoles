@@ -46,20 +46,40 @@ export async function extraireLignes(file) {
   return toutes;
 }
 
-/** Regroupe les items PDF par coordonnée Y (même ligne) et les trie par X. Exposé pour tests. */
+/**
+ * Regroupe les items PDF par coordonnée Y (même ligne) et les trie par X. Exposé pour tests.
+ *
+ * Clustering linéaire : on trie par Y décroissant et on accumule dans le cluster courant
+ * tant que l'écart avec le Y de référence du cluster est < TOL. Contrairement à un bucketing
+ * par `Math.round(y/TOL)*TOL`, cette approche n'a pas d'effet de frontière : deux items
+ * distants de 0.2 ne peuvent pas tomber dans des clusters différents juste parce qu'ils
+ * sont de part et d'autre d'un multiple de TOL.
+ *
+ * Incident : Preux-au-Sart 14km 2026 — les temps officiels étaient rendus avec un baseline
+ * shift de +0.18 vs le reste de la ligne (police bold). Sur les Y tombant pile à la frontière
+ * (ex. 578.96 vs 579.14 → buckets 578 vs 580), le temps se retrouvait seul → l'allure (3:58)
+ * était importée comme temps total.
+ */
 export function regrouperParLigne(items) {
   const TOL = 2;
-  const buckets = {};
-  items.forEach((it) => {
-    if (!it.str || !it.str.trim()) return;
-    const y = Math.round(it.transform[5] / TOL) * TOL;
-    if (!buckets[y]) buckets[y] = [];
-    buckets[y].push(it);
-  });
-  const ys = Object.keys(buckets).map(Number).sort((a, b) => b - a);
-  return ys
-    .map((y) => {
-      const triPareX = buckets[y].sort((a, b) => a.transform[4] - b.transform[4]);
+  const valides = items.filter((it) => it.str && it.str.trim());
+  valides.sort((a, b) => b.transform[5] - a.transform[5]);
+
+  const clusters = [];
+  let courant = null;
+  for (const it of valides) {
+    const y = it.transform[5];
+    if (!courant || Math.abs(y - courant.yRef) > TOL) {
+      courant = { yRef: y, items: [it] };
+      clusters.push(courant);
+    } else {
+      courant.items.push(it);
+    }
+  }
+
+  return clusters
+    .map(({ items: arr }) => {
+      const triPareX = arr.sort((a, b) => a.transform[4] - b.transform[4]);
       let texte = '';
       let lastX = null;
       triPareX.forEach((it) => {

@@ -33,7 +33,7 @@
     import { parsePage as parseAthle } from '../src/scraping/parsers/athleFr.js';
     import { parseXML as parseNordsport } from '../src/scraping/parsers/nordsport.js';
     import { parseHTML as parseGeneric } from '../src/scraping/parsers/genericHtml.js';
-    import { parseLignes as parsePdfLignes } from '../src/scraping/parsers/pdf.js';
+    import { parseLignes as parsePdfLignes, regrouperParLigne as pdfRegrouper } from '../src/scraping/parsers/pdf.js';
     import { parseText as parseCsv } from '../src/scraping/parsers/csv.js';
     import { buildCourse as plsBuildCourse } from '../src/scraping/parsers/prolivesport.js';
 
@@ -297,6 +297,25 @@
         const res = parsePdfLignes(lignesTexte);
         const dlf = res.find(r => r.ligne.nom_source.includes('FONTAINE'));
         assert(dlf, 'DE LA FONTAINE manquant');
+      });
+      test('pdf — regrouperParLigne : baseline shift sub-pixel ne sépare pas la ligne (Preux-au-Sart 2026)', () => {
+        // Repro de l'incident : le temps officiel est rendu à un Y décalé de +0.18 vs reste
+        // de la ligne (police bold). Avec un bucketing Math.round(y/2)*2 et Y=578.96 vs 579.14,
+        // les deux moitiés tombaient dans des buckets différents (578 vs 580).
+        const mk = (x, y, str) => ({ str, transform: [1, 0, 0, 1, x, y], width: 0 });
+        const items = [
+          mk(15.6, 578.96, '8.'),
+          mk(37.9, 578.96, '938'),
+          mk(68.1, 578.96, 'RICHARD Michael'),
+          mk(295.0, 578.96, "Les ch'tis marathoniens"),
+          mk(485.8, 579.14, '00:55:37'),
+          mk(530.1, 578.96, '15.1'),
+          mk(560.2, 578.96, '3:58'),
+        ];
+        const lignes = pdfRegrouper(items);
+        assertEq(lignes.length, 1);
+        assert(lignes[0].includes('00:55:37'), 'le temps officiel doit rester sur la même ligne');
+        assert(lignes[0].includes('RICHARD'), 'le nom doit rester sur la même ligne');
       });
       atest('pdf — dégénéré : 0 ligne, pas d\'exception', async () => {
         const lignesTexte = await loadFixture('fixtures/pdf/degenere.lines.json');

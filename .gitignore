@@ -1,0 +1,15 @@
+# Dépendances npm (le projet est en ESM natif sans build, pdf.js est chargé via CDN)
+node_modules/
+package-lock.json
+package.json
+
+# OS / éditeur
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Scripts de debug temporaires
+_debug_*.mjs
+_debug_*.js
